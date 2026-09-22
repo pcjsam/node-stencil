@@ -21,6 +21,7 @@ export class MediaInfo {
    
 
    constructor(data: Partial<MediaInfo>) {
+      
       Object.assign(this, data);
    }
 

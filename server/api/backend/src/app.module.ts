@@ -21,6 +21,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { JurisdictionMismatchInterceptor } from './shared/interceptors/jurisdiction-mismatch.interceptor';
 import { HttpMetricsInterceptor } from './shared/interceptors/http-metrics.interceptor';
 import { BootstrapModule } from './features/platform/bootstrap/bootstrap.module';
+import { DeletionModule } from './features/platform/deletion/deletion.module';
 
 @Module({
    imports: [
@@ -42,7 +43,8 @@ import { BootstrapModule } from './features/platform/bootstrap/bootstrap.module'
       StorageModule,
       CacheModule,
       UserModule,
-      BootstrapModule
+      BootstrapModule,
+      DeletionModule,
    ],
    providers: [
       AppConfigModule,

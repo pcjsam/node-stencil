@@ -1,0 +1,35 @@
+---
+description: Prefix generic field names (name, id aliases) with the entity so combined projections stay unambiguous
+globs: server/generation/xml/*.xml
+alwaysApply: false
+---
+
+# Entity-Specific Field Names
+
+Small entities that look like `_id` + `name` should still use **names that stay clear when combined**. Generic labels (`name`, `title` only when it is truly a title, bare `id` aliases) collide the moment two projections sit on one object or in one log line.
+
+## Display / lookup fields
+
+Prefer `[entity]_name` (or a domain-specific word: `iana_zone`, `role_name`) over `name`.
+
+```xml
+<!-- Prefer: still unique when Widget.Reference and Account.Reference are combined -->
+<field type="string" ... friendlyName="Widget Name">widget_name</field>
+<field type="string" ... friendlyName="Account Name">account_name</field>
+
+<!-- Avoid on lookup-style entities: two `name` fields, no idea which entity -->
+<field type="string" ... friendlyName="Name">name</field>
+```
+
+Same idea for other generic nouns (`code`, `label`, `value` on a typed lookup): prefix or pick a word that cannot mean two entities.
+
+## Id aliases
+
+Keep `_id` as the primary key. Add an `idAlias="true"` field named `[entity]_id` (or the route name, e.g. `jurisdiction_id`) so callers, FKs, and logs read with a noun as the domain grows. The generator copies `_id` onto the alias on insert/replace. `tenant="Route"` URLs use the alias segment (`:jurisdiction_id`), not `:_id`.
+
+```xml
+<field type="Uuid" isNullable="false" friendlyName="Id">_id</field>
+<field idAlias="true" type="Uuid" ... friendlyName="Widget Id">widget_id</field>
+```
+
+Foreign keys on other entities should use that same noun (`widget_id`), not a second generic `id`.

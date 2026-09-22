@@ -13,8 +13,8 @@ export class Jurisdiction {
    
    };
 
-   _id: string;
-   jurisdiction_id: string;
+   _id!: string;
+   jurisdiction_id!: string;
    /**
    * System Field
    */
@@ -31,6 +31,7 @@ export class Jurisdiction {
    
 
    constructor(data: Partial<Jurisdiction>) {
+      
       Object.assign(this, data);
    }
 
@@ -81,7 +82,7 @@ export namespace Jurisdiction {
          
       }
 
-      _id: string;
+      _id!: string;
       
    }
    

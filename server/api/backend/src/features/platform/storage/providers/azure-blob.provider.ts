@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { BlobServiceClient, StorageSharedKeyCredential, BlobSASPermissions, ContainerSASPermissions } from '@azure/storage-blob';
 import { ICloudStorageProvider } from '../types/storage.interfaces';
 import { CloudStorageCredentials, UploadSignature, AccessSignature, FileMetadata } from '../types/storage.types';
+import { errorStatusCode } from 'src/shared/utils/unknown-error';
 
 @Injectable()
 export class AzureBlobProvider implements ICloudStorageProvider {
@@ -96,7 +97,7 @@ export class AzureBlobProvider implements ICloudStorageProvider {
             etag: properties.etag,
          };
       } catch (error) {
-         if (error.statusCode === 404) {
+         if (errorStatusCode(error) === 404) {
             return null;
          }
          throw error;
@@ -111,7 +112,7 @@ export class AzureBlobProvider implements ICloudStorageProvider {
          await blobClient.delete();
          return true;
       } catch (error) {
-         if (error.statusCode === 404) {
+         if (errorStatusCode(error) === 404) {
             return false;
          }
          throw error;
@@ -126,7 +127,7 @@ export class AzureBlobProvider implements ICloudStorageProvider {
          await blobClient.getProperties();
          return true;
       } catch (error) {
-         if (error.statusCode === 404) {
+         if (errorStatusCode(error) === 404) {
             return false;
          }
          throw error;
@@ -206,7 +207,7 @@ export class AzureBlobProvider implements ICloudStorageProvider {
          return true;
       } catch (error) {
          // If blob doesn't exist, return false
-         if (error.statusCode === 404) {
+         if (errorStatusCode(error) === 404) {
             return false;
          }
          // Re-throw other errors
@@ -238,7 +239,7 @@ export class AzureBlobProvider implements ICloudStorageProvider {
 
          return Buffer.concat(chunks);
       } catch (error) {
-         if (error.statusCode === 404) {
+         if (errorStatusCode(error) === 404) {
             return null;
          }
          throw error;
@@ -261,7 +262,7 @@ export class AzureBlobProvider implements ICloudStorageProvider {
 
          return Buffer.concat(chunks);
       } catch (error) {
-         if (error.statusCode === 404) {
+         if (errorStatusCode(error) === 404) {
             return null;
          }
          throw error;

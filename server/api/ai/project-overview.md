@@ -17,9 +17,9 @@ Stencil is a full-stack application template with a React admin frontend, NestJS
 - **Styling**: Tailwind CSS
 - **Language**: TypeScript
 
-### Mobile App (`../../app/`)
+### Mobile App (`app/src/`)
 - **Framework**: React Native
-- **Location**: Outside this API folder, at `app/src/`
+- **This clone**: the mobile tree is not included. Docs that mention `app/src/` are from the full product; do not create that tree unless the task is explicitly to scaffold it.
 
 ## Project Structure
 

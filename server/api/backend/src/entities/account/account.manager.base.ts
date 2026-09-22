@@ -21,14 +21,21 @@ import { validate as uuidValidate } from 'uuid';
 import { MemoryCache } from 'src/shared/cache/memory-cache';
 import { BatchUtils } from 'src/shared/utils';
 import { SynchronizableEntityIsolated } from 'src/shared/managers/synchronized-entity';
+import { IAccountDeletionManager } from '../account-deletion-manager';
+
 
 @Injectable()
-export class AccountManagerBase extends MongoManagerIsolated<Account> implements SynchronizableEntityIsolated {
+export class AccountManagerBase extends MongoManagerIsolated<Account> implements IAccountDeletionManager, SynchronizableEntityIsolated {
    protected readonly logger = new Logger(AccountManagerBase.name);
 
    constructor(connectionProvider: MongoConnectionProvider, entities: EntityRegistry, dependencyCoordinator: DependencyCoordinator, memoryCache: MemoryCache) {
       super(COLLECTION_NAME, PRIMARY_KEY, connectionProvider, entities, dependencyCoordinator, memoryCache);
    }
+   async deleteAllForAccount(jurisdiction_id: string, account_id: string): Promise<number> {
+      const filter: QueryFilter<Account> = { _id: account_id };
+      return await this._deleteManyIsolated(jurisdiction_id, filter);
+   }
+
 
    async validateExistence(jurisdiction_id:string, _id:string) {
       const found = await this._retrieveIsolated<Account>(Account, jurisdiction_id, _id, { _id: 1 });
@@ -214,7 +221,6 @@ export class AccountManagerBase extends MongoManagerIsolated<Account> implements
       
       await this.postProcessMutationPermissionsPerspective(document.asPermissionsPerspective(), DocumentOperation.insert);
       
-      await this.dependencyCoordinator.markInvalidated("Account", document);
 
       return document;
    }
@@ -260,7 +266,6 @@ export class AccountManagerBase extends MongoManagerIsolated<Account> implements
       
       await this.postProcessMutationPermissionsPerspective(document.asPermissionsPerspective(), DocumentOperation.replace);
       
-      await this.dependencyCoordinator.markInvalidated("Account", document);
 
       return document;
 

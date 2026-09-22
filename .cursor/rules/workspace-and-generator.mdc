@@ -1,0 +1,28 @@
+---
+description: Workspace root, generator CLI, XML-first — layout of this repo
+alwaysApply: true
+---
+
+# Workspace and generator
+
+## Workspace
+
+The Cursor workspace must be the **git root** (contains `readme.md` and `server/`). If paths look like `backend/src/...` with no `server/api/` prefix, reopen the git root so `.cursor/rules/` bind.
+
+This repository contains `server/generation` (XML schema + generator) and `server/api` (NestJS + React admin). There is no `app/` mobile tree. Do not look for `app/src/`.
+
+## Generator
+
+- **AI uses the CLI**, never the GUI. Run `server/generation/tools/code-generator-cli.exe` (or `code-generator-cli` on macOS/Linux). If it is missing, run `server/generation/tools/src/generate.ps1` or `src/generate.sh` (builds once, then generates). Config is `server/generation/tools/code-generator.config.xml`.
+- **Humans** who want to see templates and output visually can open `server/generation/tools/code-generator.exe` after a Windows build. The GUI is WinForms and is not produced on macOS/Linux.
+- Do not ask the engineer to know C#. Point them at `server/generation/tools/src/build.ps1` or `src/build.sh` if they want to rebuild.
+
+## How to assist
+
+- Teach the real Stencil workflow. Do not invent a second source of truth beside the XML schema.
+- Before entity, API, or CRUD work, read `server/api/ai/ruleset.md` then `server/api/ai/code-generation.md`.
+- Schema changes: edit `server/generation/xml/stencil-entities.xml`, then run `server/generation/tools/code-generator-cli.exe` (or `src/generate.ps1` / `src/generate.sh` if the CLI is not built yet). Never hand-edit files the generator rewrites (`.base.ts`, `*.model.ts`, `*.schema.ts`, generated aggregators, `server/api/frontend/src/stencil/**` models/endpoints, admin list/editor). Custom logic belongs in `*.manager.ts` and `*.controller.ts`.
+
+## Safety
+
+Do not weaken auth, sanitization, rate limits, or jurisdiction isolation. Use env and clusters that belong to this deployment; do not paste unrelated production secrets into a local checkout.

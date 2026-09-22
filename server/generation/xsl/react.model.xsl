@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:key name="standardFieldType" match="items/item/field[not(@isEnum='true') and not(@hackUIDuplicate='true') and not(contains(@type,'.'))]" use="concat(../@name, translate(@type, '[]', ''))" />
+<xsl:key name="isEnumFieldKey" match="items/item/field[@isEnum='true']" use="concat(../@name, translate(@type, '[]', ''))" />
 <xsl:key name="projectionFieldTypeKey" match="items/item/projection/field" use="concat(../../@name, translate(@type, '[]', ''))" />
 <xsl:key name="nestedFieldTypeKey" match="items/item/field[contains(@type,'.')]" use="concat(../@name, @type)" />
 <xsl:key name="isClassProjectionKey" match="items/item/projection/field[@isClass='true']" use="concat(../../@name, translate(@type, '[]', ''))" />
@@ -88,7 +89,7 @@ import { <xsl:variable name="full_name">I<xsl:call-template name="Replace">
 <xsl:for-each select="projection/field[@isClass='true' and generate-id()=generate-id(key('isClassProjectionKey',concat(../../@name, translate(@type, '[]', '')))[1])]"><xsl:variable name="parent"><xsl:call-template name="ExtractParent"><xsl:with-param name="text" select="@type" /></xsl:call-template></xsl:variable><xsl:variable name="parent_lowered"><xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="$parent"/></xsl:call-template></xsl:variable>
 <xsl:if test="$self_type!=$parent">
 import { I<xsl:value-of select="$parent"/> } from './<xsl:value-of select="$parent_lowered"/>';</xsl:if></xsl:for-each>
-<xsl:for-each select="field[@isEnum='true']">
+<xsl:for-each select="field[@isEnum='true' and generate-id() = generate-id(key('isEnumFieldKey', concat(../@name, translate(@type, '[]', '')))[1])]">
 <xsl:variable name="enum_type"><xsl:call-template name="ExtractArrayType"><xsl:with-param name="text" select="@type"/></xsl:call-template></xsl:variable>
 <xsl:variable name="enum_type_lower"><xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="$enum_type"/></xsl:call-template></xsl:variable>
 import { <xsl:value-of select="$enum_type"/> } from './<xsl:value-of select="$enum_type_lower"/>';</xsl:for-each>

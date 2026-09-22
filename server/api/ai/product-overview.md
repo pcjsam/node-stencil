@@ -12,7 +12,7 @@ The core idea: **describe your data model once, generate the boilerplate everywh
 - **Code generation** — entities, enums, projections, admin CRUD views, and mobile API contracts are generated from `stencil-entities.xml`.
 - **User features** — auth, media upload, and profile endpoints are included as reference implementations.
 - **Admin panel** — web-based operator dashboard for managing jurisdictions, accounts, assets, and platform settings.
-- **Mobile scaffold** — React Native app structure with generated API hooks (outside this `server/api` folder, at `app/src/`).
+- **Mobile scaffold** — the full product includes a React Native app with generated API hooks (`app/src/`). **This clone does not include that tree.**
 
 ## Starter Entities
 

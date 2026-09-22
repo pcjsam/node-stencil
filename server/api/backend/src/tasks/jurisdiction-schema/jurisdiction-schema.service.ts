@@ -6,6 +6,7 @@ import { MongoConnectionProvider } from 'src/shared/mongo/mongo-connection.provi
 import { MAX_INT_32 } from 'src/shared/constants/int';
 import { upgradeTo_v2026_05_26 } from './jurisdictions/schema-2026-05-26';
 import { upgradeTo_v2026_05_27 } from './jurisdictions/schema-2026-05-27';
+import { errorMessage, errorStack } from 'src/shared/utils/unknown-error';
 
 type JurisdictionUpgrade = {
    version_to_upgrade: JurisdictionSchemaVersion;
@@ -41,8 +42,8 @@ export class JurisdictionSchemaService {
          this.logger.log('Upgrade Process Complete.');
          return { success: true };
       } catch (error) {
-         this.logger.error(`Error during Schema Upgrade: ${error?.message}`, error?.stack);
-         return { success: false, error: error?.message };
+         this.logger.error(`Error during Schema Upgrade: ${errorMessage(error)}`, errorStack(error));
+         return { success: false, error: errorMessage(error) };
       }
    }
 
@@ -88,13 +89,13 @@ export class JurisdictionSchemaService {
                   }
                }
             } catch (error) {
-               this.logger.error(`Error upgrading jurisdiction ${jurisdiction._id}: ${error?.message}`, error?.stack);
+               this.logger.error(`Error upgrading jurisdiction ${jurisdiction._id}: ${errorMessage(error)}`, errorStack(error));
             }
          }
 
          this.logger.log('Jurisdiction Upgrades complete.');
       } catch (error) {
-         this.logger.error(`Error during Jurisdiction Upgrades: ${error?.message}`, error?.stack);
+         this.logger.error(`Error during Jurisdiction Upgrades: ${errorMessage(error)}`, errorStack(error));
       }
    }
 }

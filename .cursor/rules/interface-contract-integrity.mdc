@@ -1,6 +1,6 @@
 ---
 description: Don't extend typed contracts at call sites — add new behavior to the interface itself
-globs: **/*.ts
+globs: **/*.ts,**/*.tsx
 alwaysApply: false
 ---
 

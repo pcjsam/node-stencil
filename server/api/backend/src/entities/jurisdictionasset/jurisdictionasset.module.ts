@@ -6,9 +6,10 @@ import { JurisdictionAssetController } from './jurisdictionasset.controller';
 import { JurisdictionAssetManager } from './jurisdictionasset.manager';
 import { COLLECTION_NAME, JurisdictionAsset } from './jurisdictionasset.schema';
 import { EntitiesModule } from 'src/entities/entity.module';
+import { StorageModule } from 'src/features/platform/storage';
 
 @Module({
-   imports: [MongoModule, forwardRef(() => EntitiesModule)],
+   imports: [MongoModule, forwardRef(() => EntitiesModule), StorageModule],
    controllers: [JurisdictionAssetController],
    providers: [
       JurisdictionAssetManager,

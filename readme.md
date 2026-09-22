@@ -2,6 +2,10 @@
 
 A code-generation powered full-stack framework where the **XML schema is the source of truth** and AI is the primary author. You describe your data model in XML; a generator produces the boilerplate across both the NestJS backend and React frontend; AI then adapts the generated extension points to add business logic.
 
+This checkout is a **training clone** for engineers to self-discover Stencil with AI. Open **this git root** as the Cursor workspace so `.cursor/rules/` and `AGENTS.md` apply.
+
+**New to Stencil?** Overview, Mongo vs SQL, C# and Python mappings: [`docs/intro/README.md`](./docs/intro/README.md). Three-level practice track: [`docs/training/README.md`](./docs/training/README.md).
+
 ## How It Works
 
 ```
@@ -10,18 +14,18 @@ stencil-entities.xml  →  [XSL Generator]  →  Generated base files (.base.ts,
                                              Extension files (yours to customize)
 ```
 
-The generator uses two file tokens to manage the output:
+After a run, the log tells you which kind of file you are looking at. You will not see a marker inside the file.
 
-| Token | Behavior | Examples |
-|-------|----------|---------|
-| `STARTFILE` | Recreated on every generator run — never edit | `*.model.ts`, `*.schema.ts`, `*.manager.base.ts`, `*.controller.base.ts`, `*Api.ts` |
-| `ENSUREFILE` | Created once, never overwritten — safe to customize | `*.manager.ts`, `*.controller.ts`, `*List.tsx`, `*Editor.tsx` |
+| What the log says | What it means | Examples |
+|-------------------|---------------|----------|
+| Created/Updated | Rewritten every run. Edits here are lost. Change the XML instead. | `*.model.ts`, `*.schema.ts`, `*.manager.base.ts`, `*.controller.base.ts`, `*Api.ts`, admin list/editor |
+| Skipping existing file | Created the first time, then left alone. Custom logic lives here. | `*.manager.ts`, `*.controller.ts` |
 
 ### The AI Workflow
 
 1. **Author or edit XML** — define entities, fields, enums, projections, and API features in `server/generation/xml/stencil-entities.xml`
-2. **Run the generator** — `server/generation/tools/code-generator-cli.exe` regenerates all `STARTFILE` outputs
-3. **Adapt the extensions** — AI reads the generated base files and implements business logic in the corresponding extension files (`*.manager.ts`, `*.controller.ts`, CRUD views)
+2. **Run the generator** — `server/generation/tools/code-generator-cli.exe` rewrites the generated files
+3. **Adapt the extensions** — business logic goes in `*.manager.ts` and `*.controller.ts`, which the generator will not overwrite
 
 This means AI is rarely writing boilerplate. It focuses on the XML schema design and the custom logic that differentiates each entity.
 
@@ -96,7 +100,7 @@ For each enum: picker components (`{Enum}Picker.tsx`, `{Enum}PickerMulti.tsx`) a
 
 ### User-Facing API Features
 
-Features define typed API contracts for web/mobile clients. The XML generates RTK Query hooks on the frontend; the backend controllers are implemented manually using the generated types.
+Features define typed HTTP contracts. The XML generates a TypeScript RTK Query client for the React admin frontend; the backend controllers are implemented manually using the generated types. This repository has no native app.
 
 ```xml
 <feature name="auth" area="user" native="true">
@@ -132,20 +136,62 @@ The federation layer is optional. Three deployment topologies are supported:
 - **Shared database** — multiple jurisdictions pointing at one Atlas cluster, logically isolated by `jurisdiction_id`
 - **Isolated databases** — full production; independent Fargate service and Atlas cluster per jurisdiction
 
+What you get by using Stencil (encryption, federation, tenancy, sliceable deploys, schema-gated change): [`server/api/ai/enterprise-features.md`](./server/api/ai/enterprise-features.md).
+
 See [`server/api/developers/README.md`](./server/api/developers/README.md) for the full architecture diagram, deployment guide, and operations runbook.
+
+## Developer dependencies
+
+Install these before cloning and running. **Cursor** is required for this training clone: project rules (`.cursor/rules/`) and `AGENTS.md` only bind when this **git root** is the Cursor workspace. If the workspace is `server/api` (or similar), rules will not apply.
+
+| Dependency | Why | Notes |
+|------------|-----|--------|
+| **[Cursor](https://cursor.com)** | Editor + AI with this repo’s rules | Open the folder that contains `readme.md` and `server/`. [Download](https://cursor.com/download). |
+| [Git](https://git-scm.com) | Clone and history | |
+| [Node.js](https://nodejs.org) **23.4+** and npm **10.9+** | NestJS API + React admin | Matches `server/api/backend/package.json` `engines`. |
+| [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (or newer) | One-time generator build | C# knowledge is not required. Binaries are not in git. |
+| [Docker](https://docs.docker.com/get-docker/) (optional) | Local four-instance federation | Only for `docker-compose.federation.yml`. |
+| MongoDB Atlas (optional) | Persistent Isolated/Shared data | If Shared Mongo URI is unset, the API uses in-memory Mongo. Do not point this clone at production clusters. |
+| Firebase (optional) | SSO | Leave unset for local `dev` / `dev-secret` sign-in. |
+
+Windows uses PowerShell (or `build.cmd`) for the generator; macOS/Linux use the `.sh` scripts.
 
 ## Getting Started
 
 ### Code generator (one-time)
 
-The generator executables are not in source control. After cloning, build them once with the [.NET 8 SDK](https://dotnet.microsoft.com/download) (Windows):
+The generator binaries are not in git. After cloning, build once with the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (or newer). You do not need to know C#. Scripts live under `src/` so `tools/` stays just the binaries and config.
 
 ```powershell
-cd server/generation/tools/src
-.\build_contained.ps1    # self-contained (~50–200 MB each); or build_framework.ps1 if .NET 8 runtime is installed
+# Windows
+.\server\generation\tools\src\build.ps1
+# or
+.\server\generation\tools\src\build.cmd
 ```
 
-This writes `code-generator.exe` and `code-generator-cli.exe` to `server/generation/tools/`. Re-run after pulling generator source changes.
+```bash
+# macOS / Linux
+chmod +x server/generation/tools/src/*.sh
+./server/generation/tools/src/build.sh
+```
+
+This writes the **CLI** (`code-generator-cli.exe` on Windows, `code-generator-cli` on macOS/Linux) into `server/generation/tools/` next to `code-generator.config.xml`. On Windows it also writes the **GUI** (`code-generator.exe`) for humans exploring templates. The GUI is WinForms and is skipped on macOS/Linux — the CLI is enough to generate code.
+
+Then generate (AI and scripts should always use the CLI; no extra args):
+
+```powershell
+.\server\generation\tools\code-generator-cli.exe
+# or, if the CLI is not built yet:
+.\server\generation\tools\src\generate.ps1
+```
+
+```bash
+./server/generation/tools/code-generator-cli
+# or, if the CLI is not built yet:
+./server/generation/tools/src/generate.sh
+```
+
+`src/generate` builds the CLI first if it is missing. Re-run `src/build` after pulling generator source changes.
 
 ### API and frontend
 
@@ -193,9 +239,16 @@ docker compose -f server/api/docker-compose.federation.yml up --build
 
 | Path | Purpose |
 |------|---------|
+| `docs/intro/` | Intro pages (overview, C#, Python) and Mongo-vs-SQL |
+| `AGENTS.md` | Cursor/agent entrypoint for this training clone — read first |
+| `.cursor/rules/` | Project rules that apply automatically when the git root is the workspace |
 | `server/generation/xml/stencil-entities.xml` | Schema source of truth — edit this to change entities, enums, or features |
-| `server/generation/tools/code-generator-cli.exe` | Generator — run after XML changes |
+| `server/generation/tools/code-generator.config.xml` | Generator config (templates, XML source, output folder) |
+| `server/generation/tools/src/generate.ps1` / `generate.sh` | Build the CLI if needed, then run it |
+| `server/generation/tools/code-generator-cli.exe` | Built CLI — AI entrypoint (not in git) |
+| `server/generation/tools/code-generator.exe` | Built GUI — Windows only, for humans (not in git) |
 | `server/generation/xsl/` | XSL templates that drive code generation |
 | `server/api/backend/src/entities/` | Backend entity implementations |
 | `server/api/frontend/src/stencil/` | Generated frontend API layer |
 | `server/api/ai/` | AI knowledge base — architecture docs and patterns |
+| `server/api/ai/enterprise-features.md` | What Stencil gives you (tenancy, federation, encryption, observability, sliceable deploys) |

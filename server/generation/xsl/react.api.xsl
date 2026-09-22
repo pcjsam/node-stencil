@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:key name="standardFieldType" match="items/item/field[not(@isEnum='true') and not(@hackUIDuplicate='true')]" use="concat(../@name, @type)" />
+<xsl:key name="isEnumFieldKey" match="items/item/field[@isEnum='true']" use="concat(../@name, translate(@type, '[]', ''))" />
 <xsl:key name="standardFeatureFieldTypeKey" match="items/feature/entity[not(@isItem='true')]/field[not(@isEnum='true')]" use="concat(../../@name,../@name, @type)" />
 <xsl:key name="nestedFeatureFieldTypeKey" match="items/feature/entity/field[contains(@type,'.')]" use="concat(../@name, @type)" />
 <xsl:key name="entityMutationTypesKey" match="items/item/mutation[string-length(@requestType)>0 or string-length(@itemResult)>0 or string-length(@listResult)>0]" use="concat(../@name, @requestType, @itemResult, @listResult)" />
 <xsl:key name="entityQueryTypesKey" match="items/item/query[string-length(@requestType)>0 or string-length(@itemResult)>0 or string-length(@listResult)>0]" use="concat(../@name, @requestType, @itemResult, @listResult)" />
-<xsl:key name="featureInvalidation" match="items/feature/query[string-length(@invalidation)>0]" use="concat(../@name, ../@area, @invalidation)" />
+<xsl:key name="featureInvalidation" match="items/feature/*[self::query or self::mutation][string-length(@invalidation)>0]" use="concat(../@name, ../@area, @invalidation)" />
 
 <xsl:variable name="security_route"><xsl:value-of select="items/@securityRoute"/></xsl:variable>
 
@@ -34,7 +35,7 @@
 
 '''[STARTFILE:<xsl:value-of select="../@frontendPrefix"/>\<xsl:value-of select="$project_lower"/>\models\entities\requests\list-input-<xsl:value-of select="$name_lower"/>.ts]
 import { ListInput } from "@/<xsl:value-of select="$project_lower"/>/models/list-input";
-<xsl:for-each select="field[@isEnum='true']">import { <xsl:call-template name="ExtractArrayType"><xsl:with-param name="text" select="@type"/></xsl:call-template> } from "@/<xsl:value-of select="$project_lower"/>/models/entities/<xsl:call-template name="ToLower"><xsl:with-param name="inputString"><xsl:call-template name="ExtractArrayType"><xsl:with-param name="text" select="@type"/></xsl:call-template></xsl:with-param></xsl:call-template>"
+<xsl:for-each select="field[@isEnum='true' and generate-id() = generate-id(key('isEnumFieldKey', concat(../@name, translate(@type, '[]', '')))[1])]">import { <xsl:call-template name="ExtractArrayType"><xsl:with-param name="text" select="@type"/></xsl:call-template> } from "@/<xsl:value-of select="$project_lower"/>/models/entities/<xsl:call-template name="ToLower"><xsl:with-param name="inputString"><xsl:call-template name="ExtractArrayType"><xsl:with-param name="text" select="@type"/></xsl:call-template></xsl:with-param></xsl:call-template>"
 </xsl:for-each>
 export interface IListInput<xsl:value-of select="$name"/> extends ListInput<xsl:value-of select="$name"/> {
 }
@@ -371,7 +372,7 @@ import { I<xsl:value-of select="$entity"/>  } from '@/<xsl:value-of select="$pro
 
 </xsl:if>
 </xsl:for-each>
-export const addTagTypes = [<xsl:for-each select="query[string-length(@invalidation)>0 and generate-id()=generate-id(key('featureInvalidation',concat(../@name, ../@area, @invalidation))[1])]"><xsl:if test="position()>1">, </xsl:if>'<xsl:value-of select="@invalidation"/>'</xsl:for-each>] as const;
+export const addTagTypes = [<xsl:for-each select="*[self::query or self::mutation][string-length(@invalidation)>0 and generate-id()=generate-id(key('featureInvalidation',concat(../@name, ../@area, @invalidation))[1])]"><xsl:if test="position()>1">, </xsl:if>'<xsl:value-of select="@invalidation"/>'</xsl:for-each>] as const;
 
 const <xsl:value-of select="$name"/>Api = apiService
    .enhanceEndpoints({

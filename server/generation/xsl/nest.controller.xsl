@@ -5,6 +5,7 @@
 <xsl:key name="isDottedClassFieldKey" match="items/item/field[@isClass='true' and contains(@type,'.')]" use="concat(../@name, substring-before(translate(@type, '[]', ''), '.'))" />
 <xsl:key name="isDottedClassProjectionFieldKey" match="items/item/projection/field[@isClass='true' and contains(@type,'.')]" use="concat(../../@name, substring-before(translate(@type, '[]', ''), '.'))" />
 <xsl:key name="isEnumFieldKey" match="items/item/field[@isEnum='true']" use="concat(../@name, translate(@type, '[]', ''))" />
+<xsl:key name="isEnumFilterFieldKey" match="items/item/field[@isEnum='true' and @filter='true']" use="concat(../@name, translate(@type, '[]', ''))" />
 <xsl:key name="isEnumProjectionFieldKey" match="items/item/projection/field[@isEnum='true']" use="concat(../../@name, ../@name, translate(@type, '[]', ''))" />
 
 <xsl:template match="/">
@@ -63,7 +64,7 @@ import { OptionalBoolPipe } from 'src/shared/utils/optional-bool.pipe';
 <xsl:if test="count(field[string-length(@uiUploadAvatar)>0])>0">import { CloudStorageHandler } from 'src/features/platform/storage';
 import { StorageUtils } from 'src/features/utils/storage.utils';
 </xsl:if>
-<xsl:for-each select="field[@isEnum='true' and @filter='true']">import { <xsl:value-of select="@type"/> } from '../enums/<xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="@type"/></xsl:call-template>';
+<xsl:for-each select="field[@isEnum='true' and @filter='true' and generate-id() = generate-id(key('isEnumFilterFieldKey', concat(../@name, translate(@type, '[]', '')))[1])]">import { <xsl:value-of select="@type"/> } from '../enums/<xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="@type"/></xsl:call-template>';
 </xsl:for-each>
 
 @Controller('admin/<xsl:for-each select="field[@tenant='true']">:<xsl:value-of select="text()"/>/</xsl:for-each><xsl:value-of select="$name_lowered"/>')

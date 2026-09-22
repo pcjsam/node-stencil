@@ -3,6 +3,7 @@ import { registerSchema } from 'src/shared/managers/schema-registry';
 import { SchemaFactory } from '@nestjs/mongoose';
 import { COLLECTION_NAME, MediaInfo } from './mediainfo.schema';
 import { EntitiesModule } from 'src/entities/entity.module';
+import { StorageModule } from 'src/features/platform/storage';
 
 @Module({})
 export class MediaInfoModule {

@@ -1,0 +1,32 @@
+---
+description: Prefer additive XML changes; document rewrites go through JurisdictionSchemaService
+globs: server/generation/xml/*.xml,server/api/backend/src/tasks/jurisdiction-schema/**
+alwaysApply: false
+---
+
+# Additive Schema Evolution
+
+XML and stored documents should stay **backward compatible** when possible. A generator run must not imply that every existing row already has a new required field.
+
+## Prefer
+
+- New **nullable** fields (`isNullable="true"`).
+- New projections, indexes, enums, perspectives.
+- New entities.
+
+Old documents remain valid; managers and readers treat missing as undefined.
+
+## When data must change
+
+Do not encode a required backfill only in XML (e.g. `isNullable="false"` on a field that existing rows lack). Add a versioned upgrade:
+
+1. Add a member to `JurisdictionSchemaVersion` (and bump `current`).
+2. Add `upgradeTo_vYYYY_MM_DD` under `server/api/backend/src/tasks/jurisdiction-schema/jurisdictions/`.
+3. Register the step in `JurisdictionSchemaService` (`version_to_upgrade` → `version_after`).
+4. The service walks jurisdictions, reads `schema_version` from `JurisdictionSetting`, runs pending steps, persists the new version.
+
+Shared (non-isolated) data that needs a rewrite gets an explicit, reviewed path — not an implicit “required field” in XML.
+
+## Not a cutover switch
+
+Making a field required, renaming by deleting-and-adding, or changing a type in place are data migrations. Use the schema version pattern (or an equivalent one-shot processor) so tenants that have not run yet keep working.

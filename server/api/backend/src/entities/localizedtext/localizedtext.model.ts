@@ -10,6 +10,7 @@ export class LocalizedText {
    
 
    constructor(data: Partial<LocalizedText>) {
+      
       Object.assign(this, data);
    }
 

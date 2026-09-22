@@ -2,6 +2,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:key name="foreignKeyKey" match="items/item/field[string-length(@foreignKey)>0]" use="concat(../@name, @foreignKey)" />
 <xsl:key name="isEnumKey" match="items/item/field[@isEnum='true']" use="concat(../@name, @type)" />
+<xsl:key name="isEnumFieldKey" match="items/item/field[@isEnum='true']" use="concat(../@name, translate(@type, '[]', ''))" />
 <xsl:variable name="security_entity"><xsl:value-of select="items/@securityEntity"/></xsl:variable>
 <xsl:variable name="security_route"><xsl:value-of select="items/@securityRoute"/></xsl:variable>
 
@@ -10,7 +11,7 @@
 '''[STARTFILE:<xsl:value-of select="items/@frontendPrefix"/>configs\navigation.config\super-crud.ts]import { NAV_ITEM_TYPE_ITEM } from '@/constants/navigation.constant';
 import type { NavigationTree } from '@/@types/navigation';
 
-const superCrudConfig: NavigationTree[] = [<xsl:for-each select="items/item[not(@classOnly='true') and not(@tenant='Isolated') and count(field[@uiParent='true'])=0]"><xsl:sort select="@name" data-type="text" order="ascending"/>
+const superCrudConfig: NavigationTree[] = [<xsl:for-each select="items/item[not(@uiGenerate='false') and not(@classOnly='true') and not(@tenant='Isolated') and count(field[@uiParent='true'])=0]"><xsl:sort select="@name" data-type="text" order="ascending"/>
 <xsl:variable name="name_lowered"><xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="@name"/></xsl:call-template></xsl:variable>
 <xsl:variable name="name"><xsl:value-of select="@name"/></xsl:variable>
 <xsl:variable name="name_friendly_plural"><xsl:call-template name="Pluralize"><xsl:with-param name="inputString" select="@friendlyName"/></xsl:call-template></xsl:variable>
@@ -38,7 +39,7 @@ export default superCrudConfig;
 import { lazy } from 'react';
 import type { Routes } from '@/@types/routes';
 
-const superCrudRoutes: Routes = [<xsl:for-each select="items/item[not(@classOnly='true') and not(@tenant='Isolated')]"><xsl:sort select="@name" data-type="text" order="ascending"/>
+const superCrudRoutes: Routes = [<xsl:for-each select="items/item[not(@uiGenerate='false') and not(@classOnly='true') and not(@tenant='Isolated')]"><xsl:sort select="@name" data-type="text" order="ascending"/>
 <xsl:variable name="name_lowered"><xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="@name"/></xsl:call-template></xsl:variable>
 <xsl:variable name="primary_field"><xsl:choose><xsl:when test="count(field[@idAlias='true'])>0"><xsl:value-of select="field[@idAlias='true'][1]/text()"/></xsl:when><xsl:otherwise><xsl:value-of select="field[1]/text()"/></xsl:otherwise></xsl:choose></xsl:variable>
 <xsl:variable name="name"><xsl:value-of select="@name"/></xsl:variable>{
@@ -54,7 +55,7 @@ const superCrudRoutes: Routes = [<xsl:for-each select="items/item[not(@classOnly
       authority: [],
    },
    </xsl:if>
-</xsl:for-each><xsl:for-each select="items/item[not(@classOnly='true') and @tenant='Isolated']"><xsl:sort select="@name" data-type="text" order="ascending"/>
+</xsl:for-each><xsl:for-each select="items/item[not(@uiGenerate='false') and not(@classOnly='true') and @tenant='Isolated']"><xsl:sort select="@name" data-type="text" order="ascending"/>
 <xsl:variable name="name_lowered"><xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="@name"/></xsl:call-template></xsl:variable>
 <xsl:variable name="primary_field"><xsl:choose><xsl:when test="count(field[@idAlias='true'])>0"><xsl:value-of select="field[@idAlias='true'][1]/text()"/></xsl:when><xsl:otherwise><xsl:value-of select="field[1]/text()"/></xsl:otherwise></xsl:choose></xsl:variable>
 <xsl:variable name="name"><xsl:value-of select="@name"/></xsl:variable>{
@@ -518,7 +519,7 @@ type <xsl:value-of select="$name"/>EditorProps = {
    is_create: boolean;
    onDelete?: (<xsl:value-of select="$name_lower"/>: I<xsl:value-of select="$name"/>) =&gt; void;
    onCreate?: (<xsl:value-of select="$name_lower"/>: I<xsl:value-of select="$name"/>) =&gt; void;<xsl:for-each select="field[@uiParent='true']"><xsl:text>
-   </xsl:text><xsl:value-of select="text()"/>: string;
+   </xsl:text><xsl:value-of select="text()"/><xsl:if test="@isNullable='true'">?</xsl:if>: string;
    </xsl:for-each><xsl:text>
    </xsl:text><xsl:value-of select="$unique_id"/>?: string;<xsl:if test="@tenant='Isolated' and count(field[@uiParent='true' and text()=$security_route])=0"><xsl:if test="not(count(field[@isolated='true']))=1"><xsl:text>
    </xsl:text><xsl:value-of select="$security_route"/>: string;</xsl:if></xsl:if>
@@ -956,7 +957,7 @@ function <xsl:value-of select="$name"/>Editor(props: <xsl:value-of select="$name
                                  &lt;Input
                                     {...field}
                                     className="mb-2"
-                                    onChange={e =&gt; field.onChange(new Decimal(e.target.value).toString())}
+                                    onChange={e =&gt; field.onChange(e.target.value)}
                                     type="number"
                                     id="<xsl:value-of select="text()"/>"<xsl:if test="not(@isNullable='true')">
                                     required</xsl:if><xsl:if test="text()=$unique_id or @readOnly='true' or @uiReadOnly='true'">
@@ -1052,7 +1053,7 @@ import { useAppDispatch } from '@/store/rootStore';
 import { I<xsl:value-of select="$name"/> } from '@/<xsl:value-of select="$project_lower"/>/models/entities/<xsl:value-of select="$name_lower"/>';
 import { <xsl:value-of select="$name_lower"/>Endpoints, useGet<xsl:value-of select="$name_plural"/>Query } from '@/<xsl:value-of select="$project_lower"/>/endpoints/entities/<xsl:value-of select="$name_camel"/>Api';
 import { ListInput<xsl:value-of select="$name"/> } from '@/<xsl:value-of select="$project_lower"/>/models/entities/requests/list-input-<xsl:value-of select="$name_lower"/>';
-import <xsl:value-of select="$name"/>Editor from './<xsl:value-of select="$name"/>Editor';<xsl:for-each select="field[@isEnum='true']">
+import <xsl:value-of select="$name"/>Editor from './<xsl:value-of select="$name"/>Editor';<xsl:for-each select="field[@isEnum='true' and generate-id() = generate-id(key('isEnumFieldKey', concat(../@name, translate(@type, '[]', '')))[1])]">
 <xsl:variable name="enum_type"><xsl:call-template name="ExtractArrayType"><xsl:with-param name="text" select="@type"/></xsl:call-template></xsl:variable>
 <xsl:variable name="enum_type_lower"><xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="$enum_type"/></xsl:call-template></xsl:variable>
 import { <xsl:value-of select="$enum_type"/> } from '@/<xsl:value-of select="$project_lower"/>/models/entities/<xsl:value-of select="$enum_type_lower"/>';</xsl:for-each>
@@ -1327,7 +1328,7 @@ import { useAppDispatch } from '@/store/rootStore';
 import { I<xsl:value-of select="$name"/> } from '@/<xsl:value-of select="$project_lower"/>/models/entities/<xsl:value-of select="$name_lower"/>';
 import { <xsl:value-of select="$name_lower"/>Endpoints, useGet<xsl:value-of select="$name_plural"/>Query } from '@/<xsl:value-of select="$project_lower"/>/endpoints/entities/<xsl:value-of select="$name_camel"/>Api';
 import { ListInput<xsl:value-of select="$name"/> } from '@/<xsl:value-of select="$project_lower"/>/models/entities/requests/list-input-<xsl:value-of select="$name_lower"/>';
-import <xsl:value-of select="$name"/>Editor from './<xsl:value-of select="$name"/>Editor';<xsl:for-each select="field[@isEnum='true']">
+import <xsl:value-of select="$name"/>Editor from './<xsl:value-of select="$name"/>Editor';<xsl:for-each select="field[@isEnum='true' and generate-id() = generate-id(key('isEnumFieldKey', concat(../@name, translate(@type, '[]', '')))[1])]">
 <xsl:variable name="enum_type"><xsl:call-template name="ExtractArrayType"><xsl:with-param name="text" select="@type"/></xsl:call-template></xsl:variable>
 <xsl:variable name="enum_type_lower"><xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="$enum_type"/></xsl:call-template></xsl:variable>
 import { <xsl:value-of select="$enum_type"/> } from '@/<xsl:value-of select="$project_lower"/>/models/entities/<xsl:value-of select="$enum_type_lower"/>';</xsl:for-each>
@@ -1489,7 +1490,7 @@ export default <xsl:value-of select="$name"/>List;
 </xsl:if>
 
 
-<xsl:if test="@uiDetail='true' or count(../item/field[@uiParent='true' and @foreignKey=$name])">
+<xsl:if test="@uiDetail='true' or count(../item[not(@uiGenerate='false')]/field[@uiParent='true' and @foreignKey=$name])">
 '''[STARTFILE:<xsl:value-of select="../@frontendPrefix"/>\views\super\crud\<xsl:value-of select="$name_lower"/>\<xsl:value-of select="$name"/>Crumb.tsx]
 import { ActionLink } from '@/components/shared';
 <xsl:for-each select="field[@uiParent='true']">import <xsl:value-of select="@foreignKey"/>Crumb from '../<xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="@foreignKey"/></xsl:call-template>/<xsl:value-of select="@foreignKey"/>Crumb';</xsl:for-each>
@@ -1505,10 +1506,10 @@ type <xsl:value-of select="@name"/>CrumbProps = {
 }
 function <xsl:value-of select="@name"/>Crumb({<xsl:value-of select="$unique_id"/>, as_root = false<xsl:if test="count(field[@uiParent='true'])>0">, <xsl:value-of select="$security_route"/></xsl:if>}: <xsl:value-of select="@name"/>CrumbProps) {
    return (
-      &lt;&gt;<xsl:if test="count(field[@uiParent='true'])=0 and count(../item/field[@uiParent='true' and @foreignKey=$name])>0">
+      &lt;&gt;<xsl:if test="count(field[@uiParent='true'])=0 and count(../item[not(@uiGenerate='false')]/field[@uiParent='true' and @foreignKey=$name])>0">
          &lt;ActionLink to={`/super/<xsl:if test="count(field[@uiParent='true'])>0"><xsl:value-of select="$security_entity"/>/${<xsl:value-of select="$security_route"/>}/</xsl:if><xsl:value-of select="$name_lower"/>`}&gt;<xsl:value-of select="$name_plural"/>&lt;/ActionLink&gt;
          </xsl:if><xsl:for-each select="field[@uiParent='true']">{/* //TODO:SHOULD:WILL:Crud Crumbs */}
-         &lt;<xsl:value-of select="@foreignKey"/>Crumb <xsl:if test="count(../field[not(@uiParent='true') and text()=$security_route])>0"><xsl:value-of select="$security_route"/>={<xsl:value-of select="$security_route"/>}</xsl:if> /&gt;
+         &lt;<xsl:value-of select="@foreignKey"/>Crumb <xsl:if test="count(../../item[@name=current()/@foreignKey]/field[@uiParent='true'])>0"><xsl:value-of select="$security_route"/>={<xsl:value-of select="$security_route"/>}</xsl:if> /&gt;
          </xsl:for-each>
          { 
             !as_root &amp;&amp;
@@ -1538,12 +1539,12 @@ import { I<xsl:value-of select="$name"/> } from '@/<xsl:value-of select="$projec
 
 import <xsl:value-of select="$name"/>Editor from './<xsl:value-of select="$name"/>Editor';
 import { useGet<xsl:value-of select="$name"/>Query } from '@/<xsl:value-of select="$project_lower"/>/endpoints/entities/<xsl:value-of select="$name_camel"/>Api';
-<xsl:for-each select="../item/field[@uiParent='true' and @foreignKey=$name]">
+<xsl:for-each select="../item[not(@uiGenerate='false')]/field[@uiParent='true' and @foreignKey=$name]">
 import <xsl:value-of select="../@name"/>List from '../<xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="../@name"/></xsl:call-template>/<xsl:value-of select="../@name"/>List';</xsl:for-each>
 import Loading from '@/components/shared/Loading';
 <xsl:for-each select="field[@uiParent='true']">import <xsl:value-of select="@foreignKey"/>Crumb, { navigationFor<xsl:value-of select="@foreignKey"/> } from '../<xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="@foreignKey"/></xsl:call-template>/<xsl:value-of select="@foreignKey"/>Crumb';
 </xsl:for-each>
-<xsl:if test="count(field[@uiParent='true'])=0 and count(../item/field[@uiParent='true' and @foreignKey=$name])>0">
+<xsl:if test="count(field[@uiParent='true'])=0 and count(../item[not(@uiGenerate='false')]/field[@uiParent='true' and @foreignKey=$name])>0">
 import <xsl:value-of select="$name"/>Crumb, { navigationFor<xsl:value-of select="$name"/> } from '../<xsl:value-of select="$name_lower"/>/<xsl:value-of select="$name"/>Crumb';
 </xsl:if>
 <xsl:for-each select="field[@isolated='true']">
@@ -1555,7 +1556,9 @@ type <xsl:value-of select="$name"/>DetailProps = Meta &amp; {
 
 function <xsl:value-of select="$name"/>Detail(props: <xsl:value-of select="$name"/>DetailProps) {
    const { className } = props;
-   const { <xsl:value-of select="$unique_id"/><xsl:for-each select="field[@tenant='true' and not(@isolated='true')]">, <xsl:value-of select="text()"/></xsl:for-each> } = useParams();
+   <xsl:variable name="route_param"><xsl:choose><xsl:when test="@tenant='Route' and count(field[@idAlias='true'])>0"><xsl:value-of select="field[@idAlias='true'][1]/text()"/></xsl:when><xsl:otherwise><xsl:value-of select="$unique_id"/></xsl:otherwise></xsl:choose></xsl:variable>
+   // For tenant=Route, the URL segment is :idAlias (e.g. :jurisdiction_id), not :_id.
+   const { <xsl:value-of select="$route_param"/><xsl:for-each select="field[@tenant='true' and not(@isolated='true')]">, <xsl:value-of select="text()"/></xsl:for-each> } = useParams();
    const navigate = useNavigate();
    const { t } = useTranslation();
 
@@ -1564,14 +1567,15 @@ function <xsl:value-of select="$name"/>Detail(props: <xsl:value-of select="$name
          <xsl:value-of select="$security_route"/>: <xsl:value-of select="$security_route"/>!,
          input: <xsl:value-of select="$unique_id"/>!
       };</xsl:when>
-         <xsl:otherwise><xsl:value-of select="$unique_id"/>!;</xsl:otherwise>
+         <xsl:otherwise><xsl:value-of select="$route_param"/>!;</xsl:otherwise>
       </xsl:choose>
 
-	let <xsl:value-of select="$name_lower"/> = useGet<xsl:value-of select="$name"/>Query(<xsl:value-of select="$name_lower"/>QueryInput, { refetchOnMountOrArgChange: true, skip: false });
+	let <xsl:value-of select="$name_lower"/> = useGet<xsl:value-of select="$name"/>Query(<xsl:value-of select="$name_lower"/>QueryInput, { refetchOnMountOrArgChange: true, skip: !<xsl:value-of select="$route_param"/> });
 
    const onDelete = function (<xsl:value-of select="$name_lower"/>: I<xsl:value-of select="$name"/>) {
       <xsl:choose>
-      <xsl:when test="count(field[@uiParent='true'])>0 and count(field[text()=$security_route])>0">navigate(navigationFor<xsl:for-each select="field[@uiParent='true']"><xsl:value-of select="@foreignKey"/></xsl:for-each>(<xsl:if test="count(field[@uiParent='true' and not(@tenant='true')])>0"><xsl:value-of select="$name_lower"/>.<xsl:value-of select="$security_route"/>, </xsl:if><xsl:value-of select="$name_lower"/>.<xsl:for-each select="field[@uiParent='true']"><xsl:value-of select="text()"/></xsl:for-each>));</xsl:when>
+      <xsl:when test="count(field[@uiParent='true' and not(@tenant='true')])>0">navigate(navigationFor<xsl:value-of select="field[@uiParent='true' and not(@tenant='true')][1]/@foreignKey"/>(<xsl:if test="count(field[text()=$security_route])>0"><xsl:value-of select="$name_lower"/>.<xsl:value-of select="$security_route"/>, </xsl:if><xsl:value-of select="$name_lower"/>.<xsl:value-of select="field[@uiParent='true' and not(@tenant='true')][1]/text()"/>));</xsl:when>
+      <xsl:when test="count(field[@uiParent='true'])>0 and count(field[text()=$security_route])>0">navigate(navigationFor<xsl:for-each select="field[@uiParent='true']"><xsl:value-of select="@foreignKey"/></xsl:for-each>(<xsl:value-of select="$name_lower"/>.<xsl:for-each select="field[@uiParent='true']"><xsl:value-of select="text()"/></xsl:for-each>));</xsl:when>
       <xsl:when test="count(field[@uiParent='true'])>0">navigate(navigationFor<xsl:for-each select="field[@uiParent='true']"><xsl:value-of select="@foreignKey"/></xsl:for-each>(<xsl:value-of select="$name_lower"/>.<xsl:for-each select="field[@uiParent='true']"><xsl:value-of select="text()"/></xsl:for-each>));</xsl:when>
       <xsl:otherwise>navigate(navigationFor<xsl:value-of select="$name"/>(''))</xsl:otherwise>
       </xsl:choose>
@@ -1582,10 +1586,10 @@ function <xsl:value-of select="$name"/>Detail(props: <xsl:value-of select="$name
       
          &lt;div className="flex flex-row gap-2 mb-4 ml-2"&gt;
             <xsl:choose><xsl:when test="count(field[@uiParent='true'])>0">
-            <xsl:for-each select="field[@uiParent='true']">&lt;<xsl:value-of select="@foreignKey"/>Crumb <xsl:value-of select="@foreignKeyField"/>={<xsl:value-of select="$name_lower"/>.data?.item?.<xsl:value-of select="text()"/>} <xsl:for-each select="../field[@tenant='true' and not(@isolated='true') and not(@uiParent='true')]"><xsl:value-of select="text()"/>={<xsl:value-of select="text()"/>!}</xsl:for-each>/&gt;</xsl:for-each>
+            <xsl:for-each select="field[@uiParent='true']">&lt;<xsl:value-of select="@foreignKey"/>Crumb <xsl:value-of select="@foreignKeyField"/>={<xsl:value-of select="$name_lower"/>.data?.item?.<xsl:value-of select="text()"/>} <xsl:if test="count(../../item[@name=current()/@foreignKey]/field[@uiParent='true'])>0"><xsl:value-of select="$security_route"/>={<xsl:value-of select="$security_route"/>!} </xsl:if>/&gt;</xsl:for-each>
             </xsl:when>
             <xsl:otherwise>
-            &lt;<xsl:value-of select="$name"/>Crumb as_root={true} <xsl:value-of select="$unique_id"/>={<xsl:value-of select="$unique_id"/>!} /&gt;
+            &lt;<xsl:value-of select="$name"/>Crumb as_root={true} <xsl:value-of select="$unique_id"/>={<xsl:value-of select="$route_param"/>!} /&gt;
             </xsl:otherwise></xsl:choose>
             &lt;span &gt;&amp;gt;&lt;/span&gt;
             <xsl:value-of select="$name_friendly"/>
@@ -1596,10 +1600,10 @@ function <xsl:value-of select="$name"/>Detail(props: <xsl:value-of select="$name
                   &lt;h3 className="flex flex-row"&gt;<xsl:value-of select="$name_friendly"/>&lt;Loading loading={<xsl:value-of select="$name_lower"/>.isLoading} type="inline" className="ml-4" /&gt;&lt;/h3&gt;
                   <xsl:choose><xsl:when test="count(field[@uiParent='true' and not(@tenant='true')])>0">{
                      <xsl:value-of select="$name_lower"/>.data?.item &amp;&amp;
-                     &lt;<xsl:value-of select="$name"/>Editor is_create={false} onDelete={onDelete} <xsl:for-each select="field[@uiParent='true' and not(@tenant='true')]"><xsl:value-of select="text()"/>={<xsl:value-of select="$name_lower"/>.data.item.<xsl:value-of select="text()"/>} </xsl:for-each> <xsl:value-of select="$unique_id"/>={<xsl:value-of select="$unique_id"/>!} <xsl:for-each select="field[@tenant='true' and not(@isolated='true')]"><xsl:value-of select="text()"/>={<xsl:value-of select="text()"/>!}</xsl:for-each> /&gt;
+                     &lt;<xsl:value-of select="$name"/>Editor is_create={false} onDelete={onDelete} <xsl:for-each select="field[@uiParent='true' and not(@tenant='true')]"><xsl:value-of select="text()"/>={<xsl:value-of select="$name_lower"/>.data.item.<xsl:value-of select="text()"/>} </xsl:for-each> <xsl:value-of select="$unique_id"/>={<xsl:value-of select="$route_param"/>!} <xsl:for-each select="field[@tenant='true' and not(@isolated='true')]"><xsl:value-of select="text()"/>={<xsl:value-of select="text()"/>!}</xsl:for-each> /&gt;
                   }</xsl:when>
                   <xsl:otherwise>
-                  &lt;<xsl:value-of select="$name"/>Editor is_create={false} onDelete={onDelete} <xsl:value-of select="$unique_id"/>={<xsl:value-of select="$unique_id"/>!} <xsl:for-each select="field[@tenant='true' and not(@isolated='true')]"><xsl:value-of select="text()"/>={<xsl:value-of select="text()"/>!}</xsl:for-each> /&gt;
+                  &lt;<xsl:value-of select="$name"/>Editor is_create={false} onDelete={onDelete} <xsl:value-of select="$unique_id"/>={<xsl:value-of select="$route_param"/>!} <xsl:for-each select="field[@tenant='true' and not(@isolated='true')]"><xsl:value-of select="text()"/>={<xsl:value-of select="text()"/>!}</xsl:for-each> /&gt;
                   </xsl:otherwise></xsl:choose>
                &lt;/div&gt;
                &lt;div className="flex flex-col gap-2" &gt;
@@ -1619,7 +1623,7 @@ function <xsl:value-of select="$name"/>Detail(props: <xsl:value-of select="$name
             &lt;/div&gt;
          &lt;/AdaptiveCard&gt;
 
-         <xsl:for-each select="../item/field[@uiParent='true' and @foreignKey=$name]">&lt;div className='my-8'&gt;
+         <xsl:for-each select="../item[not(@uiGenerate='false')]/field[@uiParent='true' and @foreignKey=$name]">&lt;div className='my-8'&gt;
             &lt;<xsl:value-of select="../@name"/>List expands={false} <xsl:if test="not(@tenant='true')"><xsl:value-of select="text()"/>={<xsl:value-of select="@foreignKeyField"/>!} </xsl:if>/&gt;
          &lt;/div&gt;
          </xsl:for-each>

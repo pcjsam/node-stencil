@@ -4,7 +4,7 @@ Use this file before finishing work that changes backend behavior, generated con
 
 ## Primary Checklist
 
-`developers/VERIFICATION.md` is the source for repository invariants that can be manually or programmatically checked. Update it when you add a new invariant that future agents should verify.
+`server/api/developers/VERIFICATION.md` is the source for repository invariants that can be manually or programmatically checked. Update it when you add a new invariant that future agents should verify.
 
 ## When To Run Checks
 

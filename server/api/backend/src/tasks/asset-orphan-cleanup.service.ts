@@ -3,6 +3,7 @@ import { Interval } from '@nestjs/schedule';
 import { EntityRegistry } from 'src/entities/entity.registry';
 import { CloudStorageHandler } from 'src/features/platform/storage';
 import { MAX_INT_32 } from 'src/shared/constants/int';
+import { errorMessage } from 'src/shared/utils/unknown-error';
 
 const STALE_THRESHOLD_HOURS = 24;
 const INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -90,11 +91,11 @@ export class AssetOrphanCleanupService implements OnApplicationShutdown {
                await this.entities.jurisdictionAssetManager.delete(asset);
                deleted++;
             } catch (error) {
-               this.logger.warn(`Failed to delete orphan asset ${asset._id}: ${error.message}`);
+               this.logger.warn(`Failed to delete orphan asset ${asset._id}: ${errorMessage(error)}`);
             }
          }
       } catch (error) {
-         this.logger.warn(`Failed to clean jurisdiction ${jurisdiction_id}: ${error.message}`);
+         this.logger.warn(`Failed to clean jurisdiction ${jurisdiction_id}: ${errorMessage(error)}`);
       }
 
       return deleted;

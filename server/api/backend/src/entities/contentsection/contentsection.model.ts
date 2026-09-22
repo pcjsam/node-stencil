@@ -8,7 +8,7 @@ import { sanitizeHtml, truncateStart } from 'src/shared/utils/string.utils';
 // ===========================================
 
 export class ContentSection {
-   section_kind: ContentSectionKind;
+   section_kind!: ContentSectionKind;
    markdown?: string;
    text?: string;
    target?: string;
@@ -21,6 +21,7 @@ export class ContentSection {
    
 
    constructor(data: Partial<ContentSection>) {
+      
       Object.assign(this, data);
    }
 

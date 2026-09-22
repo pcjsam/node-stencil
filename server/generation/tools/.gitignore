@@ -1,0 +1,10 @@
+# Built locally from src/ — not committed
+/code-generator-cli
+/code-generator-cli.exe
+/code-generator
+/code-generator.exe
+/*.dll
+/*.pdb
+/*.deps.json
+/*.runtimeconfig.json
+/createdump

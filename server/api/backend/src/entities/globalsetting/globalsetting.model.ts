@@ -14,8 +14,8 @@ export class GlobalSetting {
    
    };
 
-   _id: string;
-   name: string;
+   _id!: string;
+   name!: string;
    value?: string;
    /**
    * System Field
@@ -33,6 +33,7 @@ export class GlobalSetting {
    
 
    constructor(data: Partial<GlobalSetting>) {
+      
       Object.assign(this, data);
    }
 

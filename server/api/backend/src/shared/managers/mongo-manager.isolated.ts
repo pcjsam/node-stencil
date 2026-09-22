@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Model, QueryFilter, ProjectionFields, UpdateWriteOpResult, UpdateQuery, SortOrder, QueryWithHelpers, Query, Connection } from 'mongoose';
+import { Model, QueryFilter, ProjectionFields, UpdateWriteOpResult, UpdateQuery, SortOrder, QueryWithHelpers, Query, Connection, AnyBulkWriteOperation } from 'mongoose';
 import { MongoManagerBase } from './mongo-manager.base';
 import { MongoConnectionProvider } from '../mongo/mongo-connection.provider';
 import { ListResult } from '../types/data/list-result';
@@ -7,6 +7,7 @@ import { EntityRegistry } from 'src/entities/entity.registry';
 import { DependencyCoordinator } from 'src/entities/dependencies/dependency-coordinator';
 import { MemoryCache } from '../cache/memory-cache';
 import { IMongoManagerIndexable, IMongoManagerIndexableIsolated } from './mongo-manager-indexable';
+import { hasEncryptedFields } from './schema-registry';
 
 @Injectable()
 export abstract class MongoManagerIsolated<T> extends MongoManagerBase<T> implements IMongoManagerIndexableIsolated {
@@ -126,11 +127,26 @@ export abstract class MongoManagerIsolated<T> extends MongoManagerBase<T> implem
       return doc;
    }
 
+   /** Unordered `insertMany`. Empty `docs` is a no-op. Chunked so a large fold cannot exceed BSON limits. */
+   protected async _insertManyIsolated(tenant_code: string, docs: T[], chunkSize: number = 500): Promise<number> {
+      if (docs.length === 0) {
+         return 0;
+      }
+      const model = await this.getIsolatedModel(tenant_code);
+      const size = Math.max(1, chunkSize);
+      for (let i = 0; i < docs.length; i += size) {
+         await model.insertMany(docs.slice(i, i + size), { ordered: false });
+      }
+      return docs.length;
+   }
+
    protected async _upsertIsolated(ctor: new (...args: any[]) => T, tenant_code: string, id: string, doc: T, unsetFields?: string[]): Promise<T> {
       const model = await this.getIsolatedModel(tenant_code);
       const filter = { [this.primaryKeyField]: id } as QueryFilter<T>;
 
-      const updateQuery: UpdateQuery<T> = { $set: doc } as UpdateQuery<T>;
+      // Shallow copy: mongoose casts $set values in place (e.g. UUID strings ->
+      // BSON Binary), which would silently corrupt the caller's document.
+      const updateQuery: UpdateQuery<T> = { $set: { ...doc } } as UpdateQuery<T>;
       if (unsetFields && unsetFields.length > 0) {
          const unset = {} as Record<string, 1>;
          unsetFields.forEach(field => {
@@ -151,6 +167,31 @@ export abstract class MongoManagerIsolated<T> extends MongoManagerBase<T> implem
 
       const result = await model.findOneAndDelete(filter).exec();
       return !!result;
+   }
+
+   /**
+    * Multi-document delete for account-erasure / DSAR paths. Queryable Encryption
+    * collections cannot use deleteMany; those go through per-_id deleteOne bulkWrite.
+    */
+   protected async _deleteManyIsolated(jurisdiction_id: string, filter: QueryFilter<T>): Promise<number> {
+      const model = await this.getIsolatedModel(jurisdiction_id);
+      if (hasEncryptedFields(this.collectionName)) {
+         const matches = await model.find(filter, { _id: 1 } as ProjectionFields<T>).lean({ getters: true }).exec();
+         if (matches.length === 0) {
+            return 0;
+         }
+         const bulkResult = await model.bulkWrite(
+            matches.map(m => ({
+               deleteOne: {
+                  filter: { _id: (m as { _id: string })._id },
+               },
+            })) as AnyBulkWriteOperation[],
+            { ordered: false },
+         );
+         return bulkResult.deletedCount ?? matches.length;
+      }
+      const result = await model.deleteMany(filter).exec();
+      return result.deletedCount ?? 0;
    }
 
    protected async _updatePartialIsolated(jurisdiction_id: string, filter: QueryFilter<T>, update: UpdateQuery<T>): Promise<UpdateWriteOpResult> {
@@ -179,5 +220,26 @@ export abstract class MongoManagerIsolated<T> extends MongoManagerBase<T> implem
       const model = await this.getIsolatedModel(jurisdiction_id);
       const result = await model.updateMany(filter, update).exec();
       return result;
+   }
+
+   /**
+    * Unordered `bulkWrite` — Mongo's per-document bulk (mixed insert/update/delete).
+    * Use this when each op has its own filter/`$set`. `_updateManyPartialIsolated` is
+    * the same `$set` applied to every match.
+    */
+   protected async _bulkWriteIsolated(
+      tenant_code: string,
+      ops: AnyBulkWriteOperation[],
+      chunkSize: number = 500
+   ): Promise<number> {
+      if (ops.length === 0) {
+         return 0;
+      }
+      const model = await this.getIsolatedModel(tenant_code);
+      const size = Math.max(1, chunkSize);
+      for (let i = 0; i < ops.length; i += size) {
+         await model.bulkWrite(ops.slice(i, i + size), { ordered: false });
+      }
+      return ops.length;
    }
 }

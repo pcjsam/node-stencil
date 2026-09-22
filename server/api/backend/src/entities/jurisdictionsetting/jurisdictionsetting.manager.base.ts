@@ -169,7 +169,6 @@ export class JurisdictionSettingManagerBase extends MongoManagerIsolated<Jurisdi
       await this._insertIsolated(JurisdictionSetting, jurisdiction_id, document);
       
       await this.postProcessMutationDocument(document, DocumentOperation.insert);
-      await this.dependencyCoordinator.markInvalidated("JurisdictionSetting", document);
 
       return document;
    }
@@ -198,7 +197,6 @@ export class JurisdictionSettingManagerBase extends MongoManagerIsolated<Jurisdi
       await this._upsertIsolated(JurisdictionSetting, jurisdiction_id, _id, document, unset);
       
       await this.postProcessMutationDocument(document, DocumentOperation.replace);
-      await this.dependencyCoordinator.markInvalidated("JurisdictionSetting", document);
 
       return document;
 

@@ -1,7 +1,7 @@
 ---
 description: Federated and sync-tracked normal deletes use tombstones; GDPR/DSAR processors may hard-delete
-globs: **/*.ts
-alwaysApply: true
+globs: server/api/backend/src/**/*.ts
+alwaysApply: false
 ---
 
 # Federated & Sync-Tracked Deletions Use Tombstones
@@ -56,9 +56,11 @@ async cancelParticipant(participant: DualHomedParticipant): Promise<void> {
 - **No `upsert` on `updateManyPartial`** for federated entities — a missing row is either an insert-time gap (handled by reconciliation) or a tombstone (handled by reading `deleted_utc`). Either way, resurrection is wrong.
 - Mobile-facing projections that filter out tombstones must do so explicitly (`deleted_utc: { $exists: false }`) and document why; the field itself stays in the entity model.
 - Hard physical deletion is reserved for explicit GDPR/DSAR/account-deletion processors, not normal business logic.
+- `deleted_utc` is a **platform tombstone** (declare it in XML for sync-tracked entities). `edited_utc` is the sync cursor. Neither is a domain “authored/generated” date — those get their own field names. Do not confuse them with generator-owned `created_utc` / `updated_utc`.
 
 ## See Also
 
 - `interface-contract-integrity.mdc` — `findUnreplicated` is the heal path for *insert-time* gaps; do not extend it to handle deletion gaps.
-- `code-generation-workflow.mdc` — `deleted_utc` should be added in XML alongside `created_utc` / `updated_utc` for any new sync-tracked entity.
-- `ai/patterns/federation-and-dual-homed.md` — longer federation and tombstone guidance.
+- `code-generation-workflow.mdc` — add `deleted_utc` in XML for any new sync-tracked entity.
+- `server/api/ai/patterns/federation-and-dual-homed.md` — longer federation and tombstone guidance.
+- `server/api/ai/patterns/account-deletion.md` — schema-owned physical account erasure.

@@ -1,6 +1,7 @@
 ---
 description: Dual-homed (federated) entity query pattern — always filter by local_account_id
-alwaysApply: true
+globs: server/api/backend/src/**/*.ts
+alwaysApply: false
 ---
 
 # Dual-Homed Entity Query Pattern

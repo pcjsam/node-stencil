@@ -6,18 +6,16 @@
     <ProjectReference Include="..\CodeGenerator.Core\CodeGenerator.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta6.25358.103" />
-  </ItemGroup>
-
   <PropertyGroup>
     <AssemblyName>code-generator-cli</AssemblyName>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
+    <StartupObject>CodeGenerator.Cli.Program</StartupObject>
     <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Product>Code Generator CLI</Product>
-    <Description>Command-line code generation tool</Description>
+    <Description>Command-line code generation tool (AI and automation entrypoint)</Description>
+    <DebugSymbols Condition="'$(Configuration)' == 'Release'">false</DebugSymbols>
   </PropertyGroup>
 
 </Project>

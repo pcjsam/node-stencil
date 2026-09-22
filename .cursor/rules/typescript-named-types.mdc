@@ -1,6 +1,6 @@
 ---
 description: Always use named types instead of inline object types
-globs: "**/*.ts"
+globs: **/*.ts,**/*.tsx
 alwaysApply: false
 ---
 

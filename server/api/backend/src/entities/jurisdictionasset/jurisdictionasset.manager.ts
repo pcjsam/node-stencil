@@ -7,6 +7,7 @@ import { EntityRegistry } from '../entity.registry';
 import { MemoryCache } from 'src/shared/cache/memory-cache';
 import { DocumentOperation } from '../common/document-operation';
 import { AssetDependency } from '../enums/assetdependency';
+import { CloudStorageHandler } from 'src/features/platform/storage/handlers/cloud-storage.handler';
 
 @Injectable()
 export class JurisdictionAssetManager extends JurisdictionAssetManagerBase {
@@ -14,7 +15,8 @@ export class JurisdictionAssetManager extends JurisdictionAssetManagerBase {
       connectionProvider: MongoConnectionProvider,
       entities: EntityRegistry,
       dependencyCoordinator: DependencyCoordinator,
-      memoryCache: MemoryCache
+      memoryCache: MemoryCache,
+      private readonly storageHandler: CloudStorageHandler,
    ) {
       super(connectionProvider, entities, dependencyCoordinator, memoryCache);
    }
@@ -112,8 +114,17 @@ export class JurisdictionAssetManager extends JurisdictionAssetManagerBase {
    }
 
    async deleteAllForAccount(jurisdiction_id: string, account_id: string): Promise<number> {
-      const model = await this.getIsolatedModel(jurisdiction_id);
-      const result = await model.deleteMany({ account_id_creator: account_id });
-      return result.deletedCount;
+      const assets = await this.listAllForAccount(jurisdiction_id, account_id);
+      for (const asset of assets) {
+         if (!asset.storage_key) {
+            continue;
+         }
+         try {
+            await this.storageHandler.deleteFile(jurisdiction_id, asset.storage_key);
+         } catch (error) {
+            this.logger.warn(`Failed to delete storage object for asset ${asset._id}: ${error}`);
+         }
+      }
+      return super.deleteAllForAccount(jurisdiction_id, account_id);
    }
 }

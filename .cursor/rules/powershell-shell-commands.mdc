@@ -1,6 +1,6 @@
 ---
 description: Avoid PowerShell pipe-breaking patterns when running shell commands on Windows
-alwaysApply: true
+alwaysApply: false
 ---
 
 # PowerShell Shell Command Rules

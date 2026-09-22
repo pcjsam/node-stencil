@@ -6,16 +6,17 @@ import { sanitizeHtml, truncateStart } from 'src/shared/utils/string.utils';
 // ===========================================
 
 export class PreSignedUrl {
-   id: string;
-   url: string;
-   signed_url: string;
-   mime_type: string;
-   asset_kind: AssetKind;
+   id!: string;
+   url!: string;
+   signed_url!: string;
+   mime_type!: string;
+   asset_kind!: AssetKind;
    dependency?: AssetDependency;
    dependency_id?: string;
    
 
    constructor(data: Partial<PreSignedUrl>) {
+      
       Object.assign(this, data);
    }
 

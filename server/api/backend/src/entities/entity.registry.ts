@@ -36,8 +36,8 @@ export class EntityRegistry implements OnModuleInit {
       if (!this._globalSettingManager) {
          try {
             this._globalSettingManager = this.moduleRef.get('GlobalSettingManager', { strict: false });
-         } catch (error) {
-            throw new Error(`GlobalSettingManager not available: ${error.message}`);
+         } catch (error: unknown) {
+            throw new Error(`GlobalSettingManager not available: ${error instanceof Error ? error.message : String(error)}`);
          }
       }
       return this._globalSettingManager;
@@ -47,8 +47,8 @@ export class EntityRegistry implements OnModuleInit {
       if (!this._timezoneManager) {
          try {
             this._timezoneManager = this.moduleRef.get('TimezoneManager', { strict: false });
-         } catch (error) {
-            throw new Error(`TimezoneManager not available: ${error.message}`);
+         } catch (error: unknown) {
+            throw new Error(`TimezoneManager not available: ${error instanceof Error ? error.message : String(error)}`);
          }
       }
       return this._timezoneManager;
@@ -58,8 +58,8 @@ export class EntityRegistry implements OnModuleInit {
       if (!this._roleManager) {
          try {
             this._roleManager = this.moduleRef.get('RoleManager', { strict: false });
-         } catch (error) {
-            throw new Error(`RoleManager not available: ${error.message}`);
+         } catch (error: unknown) {
+            throw new Error(`RoleManager not available: ${error instanceof Error ? error.message : String(error)}`);
          }
       }
       return this._roleManager;
@@ -69,8 +69,8 @@ export class EntityRegistry implements OnModuleInit {
       if (!this._globalAccountManager) {
          try {
             this._globalAccountManager = this.moduleRef.get('GlobalAccountManager', { strict: false });
-         } catch (error) {
-            throw new Error(`GlobalAccountManager not available: ${error.message}`);
+         } catch (error: unknown) {
+            throw new Error(`GlobalAccountManager not available: ${error instanceof Error ? error.message : String(error)}`);
          }
       }
       return this._globalAccountManager;
@@ -80,8 +80,8 @@ export class EntityRegistry implements OnModuleInit {
       if (!this._jurisdictionManager) {
          try {
             this._jurisdictionManager = this.moduleRef.get('JurisdictionManager', { strict: false });
-         } catch (error) {
-            throw new Error(`JurisdictionManager not available: ${error.message}`);
+         } catch (error: unknown) {
+            throw new Error(`JurisdictionManager not available: ${error instanceof Error ? error.message : String(error)}`);
          }
       }
       return this._jurisdictionManager;
@@ -91,8 +91,8 @@ export class EntityRegistry implements OnModuleInit {
       if (!this._jurisdictionSettingManager) {
          try {
             this._jurisdictionSettingManager = this.moduleRef.get('JurisdictionSettingManager', { strict: false });
-         } catch (error) {
-            throw new Error(`JurisdictionSettingManager not available: ${error.message}`);
+         } catch (error: unknown) {
+            throw new Error(`JurisdictionSettingManager not available: ${error instanceof Error ? error.message : String(error)}`);
          }
       }
       return this._jurisdictionSettingManager;
@@ -102,8 +102,8 @@ export class EntityRegistry implements OnModuleInit {
       if (!this._jurisdictionAssetManager) {
          try {
             this._jurisdictionAssetManager = this.moduleRef.get('JurisdictionAssetManager', { strict: false });
-         } catch (error) {
-            throw new Error(`JurisdictionAssetManager not available: ${error.message}`);
+         } catch (error: unknown) {
+            throw new Error(`JurisdictionAssetManager not available: ${error instanceof Error ? error.message : String(error)}`);
          }
       }
       return this._jurisdictionAssetManager;
@@ -113,8 +113,8 @@ export class EntityRegistry implements OnModuleInit {
       if (!this._accountManager) {
          try {
             this._accountManager = this.moduleRef.get('AccountManager', { strict: false });
-         } catch (error) {
-            throw new Error(`AccountManager not available: ${error.message}`);
+         } catch (error: unknown) {
+            throw new Error(`AccountManager not available: ${error instanceof Error ? error.message : String(error)}`);
          }
       }
       return this._accountManager;
@@ -124,8 +124,8 @@ export class EntityRegistry implements OnModuleInit {
       if (!this._widgetManager) {
          try {
             this._widgetManager = this.moduleRef.get('WidgetManager', { strict: false });
-         } catch (error) {
-            throw new Error(`WidgetManager not available: ${error.message}`);
+         } catch (error: unknown) {
+            throw new Error(`WidgetManager not available: ${error instanceof Error ? error.message : String(error)}`);
          }
       }
       return this._widgetManager;

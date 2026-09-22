@@ -22,13 +22,15 @@ type JurisdictionDetailProps = Meta & {
 
 function JurisdictionDetail(props: JurisdictionDetailProps) {
    const { className } = props;
-   const { _id } = useParams();
+   
+   // For tenant=Route, the URL segment is :idAlias (e.g. :jurisdiction_id), not :_id.
+   const { jurisdiction_id } = useParams();
    const navigate = useNavigate();
    const { t } = useTranslation();
 
-   const jurisdictionQueryInput = _id!;
+   const jurisdictionQueryInput = jurisdiction_id!;
 
-	let jurisdiction = useGetJurisdictionQuery(jurisdictionQueryInput, { refetchOnMountOrArgChange: true, skip: false });
+	let jurisdiction = useGetJurisdictionQuery(jurisdictionQueryInput, { refetchOnMountOrArgChange: true, skip: !jurisdiction_id });
 
    const onDelete = function (jurisdiction: IJurisdiction) {
       navigate(navigationForJurisdiction(''))
@@ -39,7 +41,7 @@ function JurisdictionDetail(props: JurisdictionDetailProps) {
       
          <div className="flex flex-row gap-2 mb-4 ml-2">
             
-            <JurisdictionCrumb as_root={true} _id={_id!} />
+            <JurisdictionCrumb as_root={true} _id={jurisdiction_id!} />
             
             <span >&gt;</span>
             Jurisdiction
@@ -49,7 +51,7 @@ function JurisdictionDetail(props: JurisdictionDetailProps) {
                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <h3 className="flex flex-row">Jurisdiction<Loading loading={jurisdiction.isLoading} type="inline" className="ml-4" /></h3>
                   
-                  <JurisdictionEditor is_create={false} onDelete={onDelete} _id={_id!}  />
+                  <JurisdictionEditor is_create={false} onDelete={onDelete} _id={jurisdiction_id!}  />
                   
                </div>
                <div className="flex flex-col gap-2" >

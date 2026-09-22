@@ -51,7 +51,7 @@ Normal federated or mobile-sync deletion is a tombstone:
 - bump `updated_utc`
 - cascade the edit timestamp where sibling rows or mobile clients depend on it
 
-Do not use physical deletes or `upsert` to repair federated drift in normal business flows. Physical deletion is reserved for explicit GDPR/DSAR/account-deletion processors.
+Do not use physical deletes or `upsert` to repair federated drift in normal business flows. Physical deletion is reserved for explicit GDPR/DSAR/account-deletion processors that walk the XML-generated erasure registry (`AccountDeletionService.eraseAccount`). See [`account-deletion.md`](./account-deletion.md).
 
 ## Hydration
 

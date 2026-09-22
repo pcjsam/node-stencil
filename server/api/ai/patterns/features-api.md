@@ -1,11 +1,11 @@
 # Features API Pattern
 
-Features define API endpoints for the native mobile app. They're defined in XML and generate request/response models plus client API hooks. Backend feature controllers are hand-written.
+Features define typed API contracts in XML. They generate request/response models plus frontend RTK Query clients. Backend feature controllers are hand-written.
 
 ## XML Structure
 
 ```xml
-<feature name="profile" area="user" native="true">
+<feature name="profile" area="user">
   <entity name="Account.Self" isItem="true"/>
   <entity name="NameRequest">
     <field type="string">display_name</field>
@@ -34,7 +34,6 @@ Features define API endpoints for the native mobile app. They're defined in XML 
 |-----------|-------------|
 | `name` | Feature identifier (lowercase) |
 | `area` | Grouping: `user`, `admin` |
-| `native="true"` | Generate mobile app code |
 
 ## Entity Element (within feature)
 
@@ -93,45 +92,47 @@ Same attributes as query, but defaults to POST.
 | `authToken` | Path to auth token in request |
 | `authJurisdiction` | Path to jurisdiction in request |
 
-## Generated Output
+## Generated client
 
-### Mobile App (`app/src/cloud/api/{feature}Api.ts`)
+A `<feature>` is an HTTP contract. The generator emits a **TypeScript** RTK Query client and the request/response types. Any JavaScript or TypeScript caller can use that client. It is not a mobile-app API.
+
+In this repository the consumer is the React admin frontend:
+
+- Client: `frontend/src/stencil/endpoints/features/{area}/{feature}Api.ts`
+- Types: `frontend/src/stencil/models/features/{area}/{feature}/`
+
+A Stencil checkout that includes a native app can generate a second client from the same XML. This one does not. Do not look for `app/src/`.
 
 ```typescript
-export const profileApi = baseApi.injectEndpoints({
-  endpoints: (builder) => ({
-    nameUpdate: builder.mutation<Account.Self, NameRequest>({
-      query: (params) => ({
-        url: 'v1/profile/name',
-        method: 'POST',
-        body: params,
+const profileApi = apiService
+   .enhanceEndpoints({ addTagTypes })
+   .injectEndpoints({
+      endpoints: build => ({
+         nameUpdate: build.mutation<ItemResult<IAccount_Self>, INameRequest>({
+            query: (params: INameRequest) => ({
+               url: `v1/profile/name`,
+               method: 'POST',
+               data: params,
+            }),
+         }),
+         avatarUpdate: build.mutation<ItemResult<IAccount_Self>, IAvatarRequest>({
+            query: (params: IAvatarRequest) => ({
+               url: `v1/profile/avatar`,
+               method: 'POST',
+               data: params,
+            }),
+         }),
       }),
-    }),
-    avatarUpdate: builder.mutation<Account.Self, AvatarRequest>({
-      query: (params) => ({
-        url: 'v1/profile/avatar',
-        method: 'POST',
-        body: params,
-      }),
-    }),
-  }),
-});
+   });
 
-export const {
-  useNameUpdateMutation,
-  useAvatarUpdateMutation,
-} = profileApi;
+export const { useNameUpdateMutation, useAvatarUpdateMutation } = profileApi;
 ```
-
-### Mobile App Types (`app/src/cloud/models/entities/*.ts`)
-
-Request and response types are generated alongside the API.
 
 ## Common Feature Patterns
 
 ### Auth Feature
 ```xml
-<feature name="auth" area="user" native="true">
+<feature name="auth" area="user">
   <mutation name="getSelf" route="v1/auth/self" authToken="auth_token" ... />
   <mutation name="register" route="v1/auth/register" authToken="params.auth_token" ... />
 </feature>
@@ -139,7 +140,7 @@ Request and response types are generated alongside the API.
 
 ### CRUD-like Feature
 ```xml
-<feature name="widget" area="user" native="true">
+<feature name="widget" area="user">
   <mutation name="listMine" route="v1/widgets/mine" ... listResult="Widget.Public" />
   <mutation name="create" route="v1/widgets/create" ... itemResult="Widget.Public" />
 </feature>
@@ -147,7 +148,7 @@ Request and response types are generated alongside the API.
 
 ### Media Upload Feature
 ```xml
-<feature name="media" area="user" native="true">
+<feature name="media" area="user">
   <mutation name="uploadPrepare" route="v1/media/${params.jurisdiction_id}/prepare" ... itemResult="PreSignedUrl" />
   <mutation name="uploadComplete" route="v1/media/${params.jurisdiction_id}/complete" ... itemResult="JurisdictionAsset.Info" />
 </feature>

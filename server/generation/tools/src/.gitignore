@@ -1,6 +1,4 @@
-# .NET Core / .NET 8
-bin/
-obj/
+artifacts/
 *.user
 *.userosscache
 *.suo

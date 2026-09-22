@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Storage } from '@google-cloud/storage';
 import { ICloudStorageProvider } from '../types/storage.interfaces';
 import { CloudStorageCredentials, UploadSignature, AccessSignature, FileMetadata } from '../types/storage.types';
+import { errorCode } from 'src/shared/utils/unknown-error';
 
 @Injectable()
 export class GoogleCloudStorageProvider implements ICloudStorageProvider {
@@ -116,7 +117,7 @@ export class GoogleCloudStorageProvider implements ICloudStorageProvider {
             etag: metadata.etag,
          };
       } catch (error) {
-         if (error.code === 404) {
+         if (errorCode(error) === 404) {
             return null;
          }
          throw error;
@@ -131,7 +132,7 @@ export class GoogleCloudStorageProvider implements ICloudStorageProvider {
          await file.delete();
          return true;
       } catch (error) {
-         if (error.code === 404) {
+         if (errorCode(error) === 404) {
             return false;
          }
          throw error;
@@ -173,7 +174,7 @@ export class GoogleCloudStorageProvider implements ICloudStorageProvider {
          return true;
       } catch (error) {
          // If file doesn't exist, return false
-         if (error.code === 404) {
+         if (errorCode(error) === 404) {
             return false;
          }
          // Re-throw other errors
@@ -198,7 +199,7 @@ export class GoogleCloudStorageProvider implements ICloudStorageProvider {
          const [contents] = await file.download({ start: 0, end: bytes - 1 });
          return contents;
       } catch (error) {
-         if (error.code === 404) {
+         if (errorCode(error) === 404) {
             return null;
          }
          throw error;
@@ -213,7 +214,7 @@ export class GoogleCloudStorageProvider implements ICloudStorageProvider {
          const [contents] = await file.download();
          return contents;
       } catch (error) {
-         if (error.code === 404) {
+         if (errorCode(error) === 404) {
             return null;
          }
          throw error;

@@ -151,7 +151,6 @@ export class RoleManagerBase extends MongoManagerShared<Role> {
       await this._insertShared(Role, document);
       
       await this.postProcessMutationDocument(document, DocumentOperation.insert);
-      await this.dependencyCoordinator.markInvalidated("Role", document);
 
       return document;
    }
@@ -176,7 +175,6 @@ export class RoleManagerBase extends MongoManagerShared<Role> {
       await this._upsertShared(Role, _id, document, unset);
       
       await this.postProcessMutationDocument(document, DocumentOperation.replace);
-      await this.dependencyCoordinator.markInvalidated("Role", document);
 
       return document;
 

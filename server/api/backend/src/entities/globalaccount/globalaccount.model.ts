@@ -14,9 +14,9 @@ export class GlobalAccount {
    
    };
 
-   _id: string;
-   auth_identifier: string;
-   jurisdiction_id: string;
+   _id!: string;
+   auth_identifier!: string;
+   jurisdiction_id!: string;
    /**
    * System Field
    */
@@ -33,6 +33,7 @@ export class GlobalAccount {
    
 
    constructor(data: Partial<GlobalAccount>) {
+      
       Object.assign(this, data);
    }
 

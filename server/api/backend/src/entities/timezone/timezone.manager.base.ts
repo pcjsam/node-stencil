@@ -158,7 +158,6 @@ export class TimezoneManagerBase extends MongoManagerShared<Timezone> {
       await this._insertShared(Timezone, document);
       
       await this.postProcessMutationDocument(document, DocumentOperation.insert);
-      await this.dependencyCoordinator.markInvalidated("Timezone", document);
 
       return document;
    }
@@ -183,7 +182,6 @@ export class TimezoneManagerBase extends MongoManagerShared<Timezone> {
       await this._upsertShared(Timezone, _id, document, unset);
       
       await this.postProcessMutationDocument(document, DocumentOperation.replace);
-      await this.dependencyCoordinator.markInvalidated("Timezone", document);
 
       return document;
 

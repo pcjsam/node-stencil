@@ -1,6 +1,6 @@
 ---
 description: User feature routes use authenticated account jurisdiction, not caller-provided jurisdiction
-globs: backend/src/features/user/**/*.controller.ts
+globs: server/api/backend/src/features/user/**/*.controller.ts
 alwaysApply: false
 ---
 

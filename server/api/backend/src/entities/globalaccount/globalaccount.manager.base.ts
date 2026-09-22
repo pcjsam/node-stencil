@@ -167,7 +167,6 @@ export class GlobalAccountManagerBase extends MongoManagerShared<GlobalAccount> 
       await this._insertShared(GlobalAccount, document);
       
       await this.postProcessMutationDocument(document, DocumentOperation.insert);
-      await this.dependencyCoordinator.markInvalidated("GlobalAccount", document);
 
       return document;
    }
@@ -190,7 +189,6 @@ export class GlobalAccountManagerBase extends MongoManagerShared<GlobalAccount> 
       await this._upsertShared(GlobalAccount, _id, document, unset);
       
       await this.postProcessMutationDocument(document, DocumentOperation.replace);
-      await this.dependencyCoordinator.markInvalidated("GlobalAccount", document);
 
       return document;
 

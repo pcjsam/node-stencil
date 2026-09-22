@@ -148,7 +148,6 @@ export class JurisdictionManagerBase extends MongoManagerShared<Jurisdiction> {
       await this._insertShared(Jurisdiction, document);
       
       await this.postProcessMutationDocument(document, DocumentOperation.insert);
-      await this.dependencyCoordinator.markInvalidated("Jurisdiction", document);
 
       return document;
    }
@@ -173,7 +172,6 @@ export class JurisdictionManagerBase extends MongoManagerShared<Jurisdiction> {
       await this._upsertShared(Jurisdiction, _id, document, unset);
       
       await this.postProcessMutationDocument(document, DocumentOperation.replace);
-      await this.dependencyCoordinator.markInvalidated("Jurisdiction", document);
 
       return document;
 

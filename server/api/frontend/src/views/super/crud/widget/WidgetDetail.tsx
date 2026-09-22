@@ -17,6 +17,8 @@ type WidgetDetailProps = Meta & {
 
 function WidgetDetail(props: WidgetDetailProps) {
    const { className } = props;
+   
+   // For tenant=Route, the URL segment is :idAlias (e.g. :jurisdiction_id), not :_id.
    const { _id, jurisdiction_id } = useParams();
    const navigate = useNavigate();
    const { t } = useTranslation();
@@ -26,7 +28,7 @@ function WidgetDetail(props: WidgetDetailProps) {
          input: _id!
       };
 
-	let widget = useGetWidgetQuery(widgetQueryInput, { refetchOnMountOrArgChange: true, skip: false });
+	let widget = useGetWidgetQuery(widgetQueryInput, { refetchOnMountOrArgChange: true, skip: !_id });
 
    const onDelete = function (widget: IWidget) {
       navigate(navigationForJurisdiction(widget.jurisdiction_id));

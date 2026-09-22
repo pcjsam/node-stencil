@@ -14,9 +14,9 @@ export class Role {
    
    };
 
-   _id: string;
-   role_name: string;
-   permissions: string[];
+   _id!: string;
+   role_name!: string;
+   permissions!: string[];
    /**
    * System Field
    */
@@ -33,6 +33,7 @@ export class Role {
    
 
    constructor(data: Partial<Role>) {
+      
       Object.assign(this, data);
    }
 

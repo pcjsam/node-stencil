@@ -6,11 +6,12 @@ import { sanitizeHtml, truncateStart } from 'src/shared/utils/string.utils';
 export class FullDate {
    utc?: Date;
    local?: string;
-   literal: string;
-   iana_zone: string;
+   literal!: string;
+   iana_zone!: string;
    
 
    constructor(data: Partial<FullDate>) {
+      
       Object.assign(this, data);
    }
 

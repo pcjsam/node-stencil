@@ -2,6 +2,7 @@
 description: Project design philosophy — when to simplify and when to build the full solution
 alwaysApply: true
 ---
+
 # Design Philosophy
 
 ## Complexity vs Feasibility

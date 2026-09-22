@@ -16,10 +16,10 @@ export class Timezone {
    
    };
 
-   _id: string;
-   iana_zone: string;
-   display_name: string;
-   ui_sort: string;
+   _id!: string;
+   iana_zone!: string;
+   display_name!: string;
+   ui_sort!: string;
    tag?: string;
    /**
    * System Field
@@ -37,6 +37,7 @@ export class Timezone {
    
 
    constructor(data: Partial<Timezone>) {
+      
       Object.assign(this, data);
    }
 
@@ -111,10 +112,10 @@ export namespace Timezone {
          
       }
 
-      _id: string;
-      iana_zone: string;
-      ui_sort: string;
-      display_name: string;
+      _id!: string;
+      iana_zone!: string;
+      ui_sort!: string;
+      display_name!: string;
       
    }
    

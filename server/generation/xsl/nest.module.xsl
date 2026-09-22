@@ -71,8 +71,8 @@ export class EntityRegistry implements OnModuleInit {
       if (!this._<xsl:value-of select="$name_camel"/>Manager) {
          try {
             this._<xsl:value-of select="$name_camel"/>Manager = this.moduleRef.get('<xsl:value-of select="$name"/>Manager', { strict: false });
-         } catch (error) {
-            throw new Error(`<xsl:value-of select="$name"/>Manager not available: ${error.message}`);
+         } catch (error: unknown) {
+            throw new Error(`<xsl:value-of select="$name"/>Manager not available: ${error instanceof Error ? error.message : String(error)}`);
          }
       }
       return this._<xsl:value-of select="$name_camel"/>Manager;
@@ -114,10 +114,10 @@ import { <xsl:value-of select="$name"/>Controller } from './<xsl:value-of select
 import { <xsl:value-of select="$name"/>Manager } from './<xsl:value-of select="$name_lowered"/>.manager';</xsl:if>
 import { COLLECTION_NAME, <xsl:value-of select="$name"/> } from './<xsl:value-of select="$name_lowered"/>.schema';
 import { EntitiesModule } from 'src/entities/entity.module';
-<xsl:if test="count(field[string-length(@uiUploadAvatar)>0])>0">import { StorageModule } from 'src/features/platform/storage';
+<xsl:if test="count(field[string-length(@uiUploadAvatar)>0])>0 or count(field[text()='storage_key'])>0">import { StorageModule } from 'src/features/platform/storage';
 </xsl:if>
 @Module({<xsl:if test="not(@classOnly='true')">
-   imports: [MongoModule, forwardRef(() =&gt; EntitiesModule)<xsl:if test="count(field[string-length(@uiUploadAvatar)>0])>0">, StorageModule</xsl:if>],
+   imports: [MongoModule, forwardRef(() =&gt; EntitiesModule)<xsl:if test="count(field[string-length(@uiUploadAvatar)>0])>0 or count(field[text()='storage_key'])>0">, StorageModule</xsl:if>],
    controllers: [<xsl:value-of select="$name"/>Controller],
    providers: [
       <xsl:value-of select="$name"/>Manager,

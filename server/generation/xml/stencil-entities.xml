@@ -58,12 +58,12 @@
     <field type="AssetDependency" isNullable="true" isEnum="true" friendlyName="Dependencies">dependency</field>
     <field type="Uuid" isNullable="true" perspective="Process" friendlyName="Dependency ID">dependency_id</field>
   </item>
-  <item name="GlobalSetting" friendlyName="Global Setting" tenant="Shared" useDocument="true">
+  <item name="GlobalSetting" friendlyName="Global Setting" tenant="Shared" useDocument="true" accountDeletion="none">
     <field type="string" isNullable="false" maxLength="100" friendlyName="Id">_id</field>
     <field idAlias="true" type="string" isNullable="false" maxLength="100" uiList="true" filter="true" sortable="true" searchable="true" friendlyName="Name">name</field>
     <field type="string" isNullable="true" maxLength="none" uiList="true" html="true" friendlyName="Value">value</field>
   </item>
-  <item name="Timezone" friendlyName="Timezone" tenant="Shared" uiDefaultSort="ui_sort" useDocument="true">
+  <item name="Timezone" friendlyName="Timezone" tenant="Shared" uiDefaultSort="ui_sort" useDocument="true" accountDeletion="none">
     <field type="string" isNullable="false" maxLength="100" friendlyName="Id">_id</field>
     <field idAlias="true" type="string" isNullable="false" maxLength="100" uiList="true" filter="true" sortable="true" searchable="true" friendlyName="Zone">iana_zone</field>
     <field type="string" isNullable="false" maxLength="100" uiList="true" sortable="true" searchable="true" friendlyName="Display Name">display_name</field>
@@ -76,7 +76,7 @@
       <entry>display_name</entry>
     </projection>
   </item>
-  <item name="Role" friendlyName="Role" tenant="Shared" useDocument="true">
+  <item name="Role" friendlyName="Role" tenant="Shared" useDocument="true" accountDeletion="none">
     <field type="string" isNullable="false" maxLength="100" friendlyName="Id">_id</field>
     <field idAlias="true" type="string" isNullable="false" maxLength="100" uiList="true" filter="true" sortable="true" searchable="true" friendlyName="Role Name">role_name</field>
     <field type="string[]" isNullable="false" friendlyName="Permissions">permissions</field>
@@ -84,7 +84,7 @@
       <entry direction="Ascending">role_name</entry>
     </uniquekey>
   </item>
-  <item name="GlobalAccount" friendlyName="Global Account" tenant="Shared" useDocument="true">
+  <item name="GlobalAccount" friendlyName="Global Account" tenant="Shared" useDocument="true" accountDeletion="custom" deletionHandler="deleteByAuthIdentifier">
     <field type="Uuid" isNullable="false" maxLength="150" friendlyName="Id">_id</field>
     <field type="string" isNullable="false" maxLength="150" uiList="true" searchable="true" getForSingle="true" friendlyName="Auth Identifier">auth_identifier</field>
     <field type="string" isNullable="false" maxLength="10" foreignKey="Jurisdiction" foreignKeyField="_id" friendlyName="Jurisdiction">jurisdiction_id</field>
@@ -92,14 +92,14 @@
       <entry direction="Ascending">auth_identifier</entry>
     </uniquekey>
   </item>
-  <item name="Jurisdiction" friendlyName="Jurisdiction" tenant="Route" useDocument="true" uiDetail="true" >
+  <item name="Jurisdiction" friendlyName="Jurisdiction" tenant="Route" useDocument="true" uiDetail="true" accountDeletion="none">
     <field type="string" isNullable="false" maxLength="10" friendlyName="Id">_id</field>
     <field idAlias="true" type="string" isNullable="false" maxLength="10" uiList="true" filter="true" sortable="true" searchable="true" friendlyName="Jurisdiction Id">jurisdiction_id</field>
     <projection name="Public">
       <entry>_id</entry>
     </projection>
   </item>
-  <item name="JurisdictionSetting" friendlyName="Jurisdiction Setting" tenant="Isolated" useDocument="true" >
+  <item name="JurisdictionSetting" friendlyName="Jurisdiction Setting" tenant="Isolated" useDocument="true" accountDeletion="none">
     <field type="string" isNullable="false" maxLength="10" friendlyName="JurisdictionSetting">_id</field>
     <field idAlias="true" type="string" isNullable="false" maxLength="10" uiList="true" filter="true" sortable="true" searchable="true" friendlyName="Name">name</field>
     <field type="string" isNullable="false" maxLength="10" tenant="true" foreignKey="Jurisdiction" foreignKeyField="_id" uiParent="true" friendlyName="Jurisdiction">jurisdiction_id</field>
@@ -108,7 +108,7 @@
       <entry direction="Ascending">name</entry>
     </uniquekey>
   </item>
-  <item name="JurisdictionAsset" friendlyName="JurisdictionAsset" tenant="Isolated" useDocument="true" >
+  <item name="JurisdictionAsset" friendlyName="JurisdictionAsset" tenant="Isolated" useDocument="true" accountDeletion="owned" accountDeletionPhase="storage" accountDeletionOrder="10">
     <field type="Uuid" isNullable="false" searchable="true" friendlyName="Id">_id</field>
     <field type="string" isNullable="false" maxLength="10" tenant="true" foreignKey="Jurisdiction" foreignKeyField="_id" uiParent="true" friendlyName="Jurisdiction">jurisdiction_id</field>
     <field type="AssetKind" isNullable="false" isEnum="true" uiList="true" friendlyName="Asset kind">asset_kind</field>
@@ -117,7 +117,7 @@
     <field type="int" isNullable="true" perspective="Process" friendlyName="Size KB">size_kb</field>
     <field type="int" isNullable="true" perspective="Process" friendlyName="Duraction Secs">duration_secs</field>
     <field type="AssetDependency" isEnum="true" perspective="Process" isNullable="true" friendlyName="Dependencies">dependency</field>
-    <field type="Uuid" isNullable="true" friendlyName="Account ID Creator">account_id_creator</field>
+    <field type="Uuid" isNullable="true" friendlyName="Account ID Creator" accountOwner="true">account_id_creator</field>
     <field type="Uuid" isNullable="true" perspective="Process" friendlyName="Dependency ID">dependency_id</field>
     <field type="boolean" isNullable="false" perspective="Process" friendlyName="Available">available</field>
     <field type="boolean" isNullable="false" perspective="Process" friendlyName="Should Resize">resize_required</field>
@@ -157,8 +157,8 @@
       <entry kind="hashed">_id</entry>
     </shard>
   </item>
-  <item name="Account" friendlyName="Account" tenant="Isolated" useDocument="true" uiDetail="true" uiDisplayField="display_name">
-    <field type="Uuid" isNullable="false" friendlyName="Id">_id</field>
+  <item name="Account" friendlyName="Account" tenant="Isolated" useDocument="true" uiDetail="true" uiDisplayField="display_name" accountDeletion="owned" accountDeletionPhase="account" accountDeletionOrder="20">
+    <field type="Uuid" isNullable="false" friendlyName="Id" accountOwner="true">_id</field>
     <field type="string" isNullable="false" maxLength="10" tenant="true" foreignKey="Jurisdiction" foreignKeyField="_id" uiParent="true" friendlyName="Jurisdiction">jurisdiction_id</field>
     <field type="Uuid" isNullable="true" perspective="Info" foreignKey="JurisdictionAsset" foreignKeyField="_id" foreignKeyInvalidatesMe="true" recalculate="true" uiUploadAsset="Jurisdiction" uiUploadAvatar="avatar" friendlyName="Avatar">asset_id_avatar</field>
     <field type="string" isNullable="false" perspective="Status" maxLength="128" validate="email" uiList="true" searchable="true" sortable="true" recalculate="true" friendlyName="E-mail">email</field>
@@ -207,7 +207,7 @@
       <entry kind="hashed">_id</entry>
     </shard>
   </item>
-  <item name="Widget" friendlyName="Widget" tenant="Isolated" useDocument="true" uiDetail="true" uiDisplayField="title">
+  <item name="Widget" friendlyName="Widget" tenant="Isolated" useDocument="true" uiDetail="true" uiDisplayField="title" accountDeletion="none">
     <field type="Uuid" isNullable="false" friendlyName="Id">_id</field>
     <field type="string" isNullable="false" maxLength="10" tenant="true" foreignKey="Jurisdiction" foreignKeyField="_id" uiParent="true" friendlyName="Jurisdiction">jurisdiction_id</field>
     <field type="Uuid" isNullable="true" foreignKey="JurisdictionAsset" foreignKeyField="_id" foreignKeyInvalidatesMe="true" recalculate="true" uiUploadAsset="Jurisdiction" uiUploadAvatar="avatar" friendlyName="Media Asset">asset_id_media</field>

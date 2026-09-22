@@ -6,7 +6,7 @@ using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
-using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CodeGenerator.Core;
 
@@ -17,6 +17,14 @@ public class MainForm : Form
     public const string PREFERENCES_FILE = "code-generator.config.xml";
 
     private Translator _translator = new Translator();
+
+    /// <summary>Skip progress bar paints when the integer percent has not changed.</summary>
+    private int _lastProgressShown = -1;
+
+    /// <summary>Throttle status-label updates (ms since tick).</summary>
+    private long _lastStatusTick;
+
+    private const int StatusThrottleMs = 75;
 
     private IContainer components = null;
 
@@ -138,34 +146,42 @@ public class MainForm : Form
         }
     }
     
-    private void btnGenerateFiles_Click(object sender, EventArgs e)
+    private async void btnGenerateFiles_Click(object sender, EventArgs e)
     {
+        if (string.IsNullOrEmpty(txtDataFile.Text))
+        {
+            NotifyError("You must provide a data file.", IsHandled: true);
+            return;
+        }
+        bool flag = false;
+        foreach (Template template in _translator.Templates)
+        {
+            if (template.IsSelected)
+            {
+                flag = true;
+                break;
+            }
+        }
+        if (!flag)
+        {
+            NotifyError("You must have at least one template loaded and selected.", IsHandled: true);
+            return;
+        }
+
+        _translator.DataFile = txtDataFile.Text;
+        _translator.OutputFolder = txtOutputFolder.Text;
+        _translator.WindowsLineEndings = chkForWindows.Checked;
+
+        btnGenerateFiles.Enabled = false;
+        _lastProgressShown = -1;
+        _lastStatusTick = 0;
+        pbGenStatus.Value = 0;
+        lblStatus.Text = "Starting...";
+
         try
         {
-            if (string.IsNullOrEmpty(txtDataFile.Text))
-            {
-                NotifyError("You must provide a data file.", IsHandled: true);
-                return;
-            }
-            bool flag = false;
-            foreach (Template template in _translator.Templates)
-            {
-                if (template.IsSelected)
-                {
-                    flag = true;
-                    break;
-                }
-            }
-            if (!flag)
-            {
-                NotifyError("You must have at least one template loaded and selected.", IsHandled: true);
-                return;
-            }
-            _translator.DataFile = txtDataFile.Text;
-            _translator.OutputFolder = txtOutputFolder.Text;
-            _translator.WindowsLineEndings = chkForWindows.Checked;
-            btnGenerateFiles.Enabled = false;
-            _translator.GenFiles();
+            // Keep XSLT + file I/O off the UI thread so the bar can paint.
+            await Task.Run(() => _translator.GenFiles());
         }
         catch (Exception ex)
         {
@@ -180,54 +196,88 @@ public class MainForm : Form
         }
     }
 
-   
+    /// <summary>Queue a UI update without blocking the worker (no full-form Refresh).</summary>
+    private void PostUi(Action action)
+    {
+        if (IsDisposed)
+        {
+            return;
+        }
+        try
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(action);
+            }
+            else
+            {
+                action();
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
 
     private void _translator_Progress(object sender, TranslatorEventArgs e)
     {
-        try
+        int value = (int)Math.Round(e.Progress);
+        if (value < 0) value = 0;
+        if (value > 100) value = 100;
+        // Integer percent unchanged → skip marshal + paint.
+        if (value == _lastProgressShown)
         {
-            Invoke((ThreadStart)delegate
+            return;
+        }
+        _lastProgressShown = value;
+
+        PostUi(() =>
+        {
+            if (!IsDisposed && pbGenStatus.Value != value)
             {
-                pbGenStatus.Value = Convert.ToInt32(e.Progress);
-            });
-        }
-        catch (Exception ex)
-        {
-            NotifyError(ex.Message);
-        }
+                pbGenStatus.Value = value;
+            }
+        });
     }
 
     private void _translator_Notice(object sender, TranslatorEventArgs e)
     {
-        try
+        string message = e.Message ?? string.Empty;
+        bool force = message is "Complete" or "Parsing Templates" or "Writing Files"
+            || message.StartsWith("Error", StringComparison.Ordinal);
+
+        long now = Environment.TickCount64;
+        if (!force && now - _lastStatusTick < StatusThrottleMs)
         {
-            Invoke((ThreadStart)delegate
+            return;
+        }
+        _lastStatusTick = now;
+
+        PostUi(() =>
+        {
+            if (!IsDisposed)
             {
-                lblStatus.Text = e.Message;
-                Refresh();
-            });
-        }
-        catch (Exception ex)
-        {
-            NotifyError(ex.Message);
-        }
+                lblStatus.Text = message;
+            }
+        });
     }
 
     private void _translator_Error(object sender, TranslatorEventArgs e)
     {
-        try
+        PostUi(() =>
         {
-            Invoke((ThreadStart)delegate
+            if (IsDisposed)
             {
-                lblStatus.Text = "Error Occurred";
-                pbGenStatus.Value = 0;
-                MessageBox.Show(e.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            });
-        }
-        catch (Exception ex)
-        {
-            NotifyError(ex.Message);
-        }
+                return;
+            }
+            lblStatus.Text = "Error Occurred";
+            pbGenStatus.Value = 0;
+            _lastProgressShown = 0;
+            MessageBox.Show(e.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        });
     }
 
     private void NotifyError(string message, bool IsHandled = false)

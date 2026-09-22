@@ -27,10 +27,10 @@ export class Widget {
    
    };
 
-   _id: string;
-   jurisdiction_id: string;
+   _id!: string;
+   jurisdiction_id!: string;
    asset_id_media?: string;
-   title: string;
+   title!: string;
    title_localized?: LocalizedText[];
    description?: string;
    description_localized?: LocalizedContent[];
@@ -73,6 +73,7 @@ export class Widget {
    
 
    constructor(data: Partial<Widget>) {
+      
       Object.assign(this, data);
    }
 
@@ -246,8 +247,8 @@ export namespace Widget {
          jurisdiction_id: 1
       };
 
-      _id: string;
-      jurisdiction_id: string;
+      _id!: string;
+      jurisdiction_id!: string;
       
    }
 

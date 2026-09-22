@@ -15,9 +15,9 @@ export class JurisdictionSetting {
    
    };
 
-   _id: string;
-   name: string;
-   jurisdiction_id: string;
+   _id!: string;
+   name!: string;
+   jurisdiction_id!: string;
    value?: string;
    /**
    * System Field
@@ -35,6 +35,7 @@ export class JurisdictionSetting {
    
 
    constructor(data: Partial<JurisdictionSetting>) {
+      
       Object.assign(this, data);
    }
 

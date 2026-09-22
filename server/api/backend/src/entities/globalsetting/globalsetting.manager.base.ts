@@ -151,7 +151,6 @@ export class GlobalSettingManagerBase extends MongoManagerShared<GlobalSetting> 
       await this._insertShared(GlobalSetting, document);
       
       await this.postProcessMutationDocument(document, DocumentOperation.insert);
-      await this.dependencyCoordinator.markInvalidated("GlobalSetting", document);
 
       return document;
    }
@@ -176,7 +175,6 @@ export class GlobalSettingManagerBase extends MongoManagerShared<GlobalSetting> 
       await this._upsertShared(GlobalSetting, _id, document, unset);
       
       await this.postProcessMutationDocument(document, DocumentOperation.replace);
-      await this.dependencyCoordinator.markInvalidated("GlobalSetting", document);
 
       return document;
 

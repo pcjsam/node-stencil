@@ -2,12 +2,88 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <xsl:key name="perspectiveKey" match="items/item/field[string-length(@perspective)>0]" use="concat(../@name, @perspective)" />
 <xsl:key name="extraValidationKey" match="items/item/field[string-length(@extraValidation)>0]" use="concat(../@name, @extraValidation)" />
+<xsl:key name="isEnumFilterFieldKey" match="items/item/field[@isEnum='true' and @filter='true']" use="concat(../@name, translate(@type, '[]', ''))" />
 
 <xsl:template match="/">
 
 <xsl:variable name="mongooseVersion" select="items/@mongooseVersion"/>
 <xsl:variable name="filterType"><xsl:choose><xsl:when test="$mongooseVersion >= 9">QueryFilter</xsl:when><xsl:otherwise>FilterQuery</xsl:otherwise></xsl:choose></xsl:variable>
 <xsl:variable name="dbAccess"><xsl:choose><xsl:when test="$mongooseVersion >= 9">db!</xsl:when><xsl:otherwise>db</xsl:otherwise></xsl:choose></xsl:variable>
+
+'''[STARTFILE:<xsl:value-of select="items/@backendPrefix"/>entities\account-deletion-manager.ts]
+import { EntityRegistry } from './entity.registry';
+
+export interface IAccountDeletionManager {
+   deleteAllForAccount(jurisdiction_id: string, account_id: string): Promise&lt;number&gt;;
+}
+
+export type AccountDeletionPhase = string;
+
+export interface AccountDeletionStep {
+   entity: string;
+   manager: IAccountDeletionManager;
+   phase: AccountDeletionPhase;
+   order: number;
+}
+
+export interface AccountReleasedStep {
+   entity: string;
+   releaseAllForAccount(account_id: string): Promise&lt;number&gt;;
+}
+
+export interface AccountAuthDeletionStep {
+   entity: string;
+   deleteByAuthIdentifier(auth_identifier: string): Promise&lt;boolean&gt;;
+}
+
+export interface AccountFederatedDeletionContext {
+   jurisdiction_id: string;
+   account_id: string;
+}
+
+export interface AccountFederatedDeletionResult {
+   entity: string;
+   jurisdiction_id: string;
+   deleted_count: number;
+}
+
+export interface AccountFederatedDeletionStep {
+   entity: string;
+   deleteRemoteForAccount(context: AccountFederatedDeletionContext): Promise&lt;AccountFederatedDeletionResult[]&gt;;
+}
+
+<xsl:if test="count(items/item[@accountDeletion='paired'])=0">// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+</xsl:if>export interface IAccountFederatedDeletionHandler {
+<xsl:for-each select="items/item[@accountDeletion='paired']">   deleteRemote<xsl:value-of select="@name"/>ForAccount(context: AccountFederatedDeletionContext): Promise&lt;AccountFederatedDeletionResult[]&gt;;
+</xsl:for-each>}
+
+export class AccountDeletionManagerRegistry {
+   static getGeneratedManagers(entities: EntityRegistry): AccountDeletionStep[] {
+      return [
+<xsl:for-each select="items/item[string-length(@accountDeletionPhase)>0]">         { entity: '<xsl:value-of select="@name"/>', manager: entities.<xsl:call-template name="Camel"><xsl:with-param name="inputString" select="@name"/></xsl:call-template>Manager, phase: '<xsl:value-of select="@accountDeletionPhase"/>', order: <xsl:choose><xsl:when test="string-length(@accountDeletionOrder)>0"><xsl:value-of select="@accountDeletionOrder"/></xsl:when><xsl:otherwise>0</xsl:otherwise></xsl:choose> },
+</xsl:for-each>      ];
+   }
+
+   static getGeneratedReleasedManagers(entities: EntityRegistry): AccountReleasedStep[] {
+      return [
+<xsl:for-each select="items/item[@accountDeletion='released']">         { entity: '<xsl:value-of select="@name"/>', releaseAllForAccount: (account_id: string) =&gt; entities.<xsl:call-template name="Camel"><xsl:with-param name="inputString" select="@name"/></xsl:call-template>Manager.<xsl:value-of select="@releaseHandler"/>(account_id) },
+</xsl:for-each>      ];
+   }
+
+   static getGeneratedAuthDeletionManagers(entities: EntityRegistry): AccountAuthDeletionStep[] {
+      return [
+<xsl:for-each select="items/item[@accountDeletion='custom' and string-length(@deletionHandler)>0]">         { entity: '<xsl:value-of select="@name"/>', deleteByAuthIdentifier: (auth_identifier: string) =&gt; entities.<xsl:call-template name="Camel"><xsl:with-param name="inputString" select="@name"/></xsl:call-template>Manager.<xsl:value-of select="@deletionHandler"/>(auth_identifier) },
+</xsl:for-each>      ];
+   }
+
+   static getGeneratedFederatedManagers(<xsl:if test="count(/items/item[@accountDeletion='paired'])=0">_</xsl:if>handler: IAccountFederatedDeletionHandler): AccountFederatedDeletionStep[] {
+      return [
+<xsl:for-each select="items/item[@accountDeletion='paired']">         { entity: '<xsl:value-of select="@name"/>', deleteRemoteForAccount: context =&gt; handler.deleteRemote<xsl:value-of select="@name"/>ForAccount(context) },
+</xsl:for-each>      ];
+   }
+}
+
+'''[ENDFILE]
 
 <xsl:for-each select="items/item[not(@classOnly='true')]">
    <xsl:variable name="name_lowered"><xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="@name"/></xsl:call-template></xsl:variable>
@@ -59,13 +135,15 @@ import { MAX_INT_32 } from 'src/shared/constants/int';
 import { validate as uuidValidate } from 'uuid';
 import { MemoryCache } from 'src/shared/cache/memory-cache';
 import { BatchUtils } from 'src/shared/utils';
-<xsl:if test="count(field[string-length(@calculated)>0])>0">import { SynchronizableEntity<xsl:if test="@tenant='Isolated'">Isolated</xsl:if><xsl:if test="@tenant='Shared' or @tenant='Route'">Shared</xsl:if> } from 'src/shared/managers/synchronized-entity';</xsl:if>
+<xsl:if test="count(field[string-length(@calculated)>0])>0">import { SynchronizableEntity<xsl:if test="@tenant='Isolated'">Isolated</xsl:if><xsl:if test="@tenant='Shared' or @tenant='Route'">Shared</xsl:if> } from 'src/shared/managers/synchronized-entity';
+</xsl:if><xsl:if test="@accountDeletion='owned'">import { IAccountDeletionManager } from '../account-deletion-manager';
+</xsl:if>
 
-<xsl:for-each select="field[@isEnum='true' and @filter='true']">import { <xsl:value-of select="@type"/> } from '../enums/<xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="@type"/></xsl:call-template>';
+<xsl:for-each select="field[@isEnum='true' and @filter='true' and generate-id() = generate-id(key('isEnumFilterFieldKey', concat(../@name, translate(@type, '[]', '')))[1])]">import { <xsl:value-of select="@type"/> } from '../enums/<xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="@type"/></xsl:call-template>';
 </xsl:for-each>
 
 @Injectable()
-export class <xsl:value-of select="$name"/>ManagerBase extends MongoManager<xsl:value-of select="$tenant"/>&lt;<xsl:value-of select="$name"/>&gt; <xsl:if test="count(field[string-length(@calculated)>0])>0">implements SynchronizableEntity<xsl:if test="@tenant='Isolated'">Isolated</xsl:if><xsl:if test="@tenant='Shared' or @tenant='Route'">Shared</xsl:if><xsl:text> </xsl:text></xsl:if>{
+export class <xsl:value-of select="$name"/>ManagerBase extends MongoManager<xsl:value-of select="$tenant"/>&lt;<xsl:value-of select="$name"/>&gt; <xsl:if test="@accountDeletion='owned' or count(field[string-length(@calculated)>0])>0">implements <xsl:if test="@accountDeletion='owned'">IAccountDeletionManager</xsl:if><xsl:if test="@accountDeletion='owned' and count(field[string-length(@calculated)>0])>0">, </xsl:if><xsl:if test="count(field[string-length(@calculated)>0])>0">SynchronizableEntity<xsl:if test="@tenant='Isolated'">Isolated</xsl:if><xsl:if test="@tenant='Shared' or @tenant='Route'">Shared</xsl:if></xsl:if><xsl:text> </xsl:text></xsl:if>{
    protected readonly logger = new Logger(<xsl:value-of select="$name"/>ManagerBase.name);
 
    constructor(connectionProvider: MongoConnectionProvider, entities: EntityRegistry, dependencyCoordinator: DependencyCoordinator, memoryCache: MemoryCache) {
@@ -73,7 +151,14 @@ export class <xsl:value-of select="$name"/>ManagerBase extends MongoManager<xsl:
    }<xsl:if test="not(@uiGenerate='false') and count(field[@searchable='true'])=0">
       code-gen-error: //at least one field must me marked with searchable='true' for <xsl:value-of select="$name"/> because uiGenerate is set to true
    </xsl:if>
+<xsl:choose><xsl:when test="@accountDeletion='owned'">
+   async deleteAllForAccount(<xsl:choose><xsl:when test="@tenant='Isolated'">jurisdiction_id</xsl:when><xsl:otherwise>_jurisdiction_id</xsl:otherwise></xsl:choose>: string, account_id: string): Promise&lt;number&gt; {
+      const filter: <xsl:value-of select="$filterType"/>&lt;<xsl:value-of select="@name"/>&gt; = { <xsl:value-of select="field[@accountOwner='true'][1]/text()"/>: account_id };
+      return await this._deleteMany<xsl:if test="@tenant='Isolated'">Isolated(jurisdiction_id, filter)</xsl:if><xsl:if test="@tenant='Shared' or @tenant='Route'">Shared(filter)</xsl:if>;
+   }
 
+</xsl:when><xsl:otherwise><xsl:text>
+</xsl:text></xsl:otherwise></xsl:choose>
    async validateExistence(<xsl:for-each select="field[@tenant='true' and not(@isolated='true')]"><xsl:value-of select="text()"/>:<xsl:call-template name="NodeType"><xsl:with-param name="type" select="@type"/></xsl:call-template>, </xsl:for-each><xsl:value-of select="field[1]/text()"/>:string<xsl:if test="not(@tenant='Route') and not(@tenant='Isolated')"> | undefined</xsl:if>) {
       <xsl:if test="not(@tenant='Route') and not(@tenant='Isolated')">if (!<xsl:value-of select="field[1]/text()"/>)
       {
@@ -353,7 +438,9 @@ export class <xsl:value-of select="$name"/>ManagerBase extends MongoManager<xsl:
          await this.cascadeComputeSynchronizations(document);
       }
       </xsl:if>
-      await this.dependencyCoordinator.markInvalidated("<xsl:value-of select="@name"/>", document);
+      <xsl:if test="count(field[string-length(@iInvalidateForeignKey)>0])>0">
+      await this.dependencyCoordinator.on<xsl:value-of select="@name"/>Changed(document);
+      </xsl:if>
 
       return document;
    }
@@ -420,7 +507,9 @@ export class <xsl:value-of select="$name"/>ManagerBase extends MongoManager<xsl:
       // Cascade computing entities
       await this.cascadeComputeSynchronizations(document);
       </xsl:if>
-      await this.dependencyCoordinator.markInvalidated("<xsl:value-of select="@name"/>", document);
+      <xsl:if test="count(field[string-length(@iInvalidateForeignKey)>0])>0">
+      await this.dependencyCoordinator.on<xsl:value-of select="@name"/>Changed(document);
+      </xsl:if>
 
       return document;
 
@@ -448,6 +537,9 @@ export class <xsl:value-of select="$name"/>ManagerBase extends MongoManager<xsl:
       <xsl:if test="count(field[string-length(@foreignKeyComputesMe)>0])>0">
       // Cascade computing entities
       await this.cascadeComputeSynchronizations(actual);
+      </xsl:if>
+      <xsl:if test="count(field[string-length(@iInvalidateForeignKey)>0])>0">
+      await this.dependencyCoordinator.on<xsl:value-of select="@name"/>Changed(actual);
       </xsl:if>
       return result;
    }
@@ -518,6 +610,9 @@ export class <xsl:value-of select="$name"/>ManagerBase extends MongoManager<xsl:
       if (!skipCascades) {
          await this.cascadeComputeSynchronizations(actual);
       }
+      </xsl:if>
+      <xsl:if test="count(../field[string-length(@iInvalidateForeignKey)>0])>0">
+      await this.dependencyCoordinator.on<xsl:value-of select="../@name"/>Changed(actual);
       </xsl:if>
       <xsl:variable name="root_name" select="../@name"/>
       <xsl:for-each select="../../item/field[@foreignKey=$root_name and contains(@foreignKeyInvalidatesMe, concat(':',$perspective))]">

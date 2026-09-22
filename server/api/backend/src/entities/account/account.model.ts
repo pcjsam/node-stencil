@@ -25,20 +25,20 @@ export class Account {
    
    };
 
-   _id: string;
-   jurisdiction_id: string;
+   _id!: string;
+   jurisdiction_id!: string;
    asset_id_avatar?: string;
-   email: string;
+   email!: string;
    display_name?: string;
-   auth_identifier: string;
-   auth_provider: string;
-   joined_utc: Date;
-   account_status: AccountStatus;
+   auth_identifier!: string;
+   auth_provider!: string;
+   joined_utc!: Date;
+   account_status!: AccountStatus;
    roles?: string[];
    /**
    * Calculated Field
    */
-   email_upper: string;
+   email_upper!: string;
    /**
    * Calculated Field
    */
@@ -72,6 +72,9 @@ export class Account {
    
 
    constructor(data: Partial<Account>) {
+      
+      this.email_upper = '';
+
       Object.assign(this, data);
    }
 
@@ -275,8 +278,8 @@ export namespace Account {
          jurisdiction_id: 1
       };
 
-      _id: string;
-      jurisdiction_id: string;
+      _id!: string;
+      jurisdiction_id!: string;
       
    }
 
@@ -458,8 +461,8 @@ export namespace Account {
          
       }
 
-      _id: string;
-      email: string;
+      _id!: string;
+      email!: string;
       
    }
    
@@ -490,8 +493,8 @@ export namespace Account {
          
       }
 
-      _id: string;
-      jurisdiction_id: string;
+      _id!: string;
+      jurisdiction_id!: string;
       display_name?: string;
       avatar?: MediaInfo;
       
@@ -524,8 +527,8 @@ export namespace Account {
          
       }
 
-      _id: string;
-      jurisdiction_id: string;
+      _id!: string;
+      jurisdiction_id!: string;
       display_name?: string;
       avatar?: MediaInfo;
       
@@ -575,24 +578,24 @@ export namespace Account {
          
       }
 
-      _id: string;
-      email: string;
-      joined_utc: Date;
+      _id!: string;
+      email!: string;
+      joined_utc!: Date;
       display_name?: string;
       roles?: string[];
-      account_status: AccountStatus;
+      account_status!: AccountStatus;
       avatar?: MediaInfo;
-      jurisdiction_id: string;
-      auth_provider: string;
+      jurisdiction_id!: string;
+      auth_provider!: string;
       
       /**
        * Manually Hydrated
        */
-      token: string
+      token!: string
       /**
        * Manually Hydrated
        */
-      impersonated: boolean
+      impersonated!: boolean
    }
    
    export class Identity
@@ -616,8 +619,8 @@ export namespace Account {
          
       }
 
-      _id: string;
-      auth_identifier: string;
+      _id!: string;
+      auth_identifier!: string;
       
    }
    

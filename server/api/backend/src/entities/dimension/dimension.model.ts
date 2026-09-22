@@ -3,11 +3,12 @@
 // ===========================================
 
 export class Dimension {
-   width: number;
-   height: number;
+   width!: number;
+   height!: number;
    
 
    constructor(data: Partial<Dimension>) {
+      
       Object.assign(this, data);
    }
 

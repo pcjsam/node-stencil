@@ -29,7 +29,7 @@ webhook endpoint.
 | Intake controller | `backend/src/features/<area>/<feature>/<feature>-webhook.controller.ts` | Hand-written |
 | Payload types | `backend/src/features/<area>/<feature>/types/*.types.ts` | Hand-written |
 | Feature module | `backend/src/features/<area>/<feature>/<feature>.module.ts` | Hand-written |
-| Manager helpers | `backend/src/entities/webhookevent/webhookevent.manager.ts` | ENSUREFILE |
+| Manager helpers | `backend/src/entities/webhookevent/webhookevent.manager.ts` | Created once, then yours |
 | Processor service | `backend/src/tasks/<feature>-webhook.service.ts` | Hand-written |
 | Manual trigger route | `backend/src/tasks/tasks.controller.ts` + optional XML feature mutation | Hand-written/generated contract |
 

@@ -1,0 +1,39 @@
+---
+description: Prefer named nested types; JSON-packed fields are last resort and must use _json + html="true"
+globs: server/generation/xml/*.xml
+alwaysApply: false
+---
+
+# Strict Schema Types
+
+Entity fields are **named types**: primitives, enums, `classOnly` nested classes, or entity/FK ids. Do not smuggle structure through generic objects, untyped maps, or a field that is type A or type B depending on another column.
+
+## Prefer
+
+```xml
+<field type="MediaInfo" isClass="true" isNullable="true" friendlyName="Photo">photo</field>
+<field type="ContentSectionKind" isEnum="true" isNullable="false" friendlyName="Kind">section_kind</field>
+```
+
+A discriminator enum plus **separate typed classes** (or separate fields) is allowed. A single `object` / `Record` / packed JSON blob that “might be either” is not.
+
+## JSON packing is last resort
+
+Only when the payload is truly opaque (no stable schema, not queried) may a string hold `JSON.stringify` output. Then:
+
+1. **Name it with a `_json` suffix** — e.g. `mapping_json`. Marks the column as packed, not prose.
+2. **Set `html="true"`** — otherwise the sanitizer corrupts quotes, brackets, and ampersands.
+
+```xml
+<!-- Last resort: opaque packed column -->
+<field type="string" isNullable="false" maxLength="none" html="true" friendlyName="Mapping">mapping_json</field>
+```
+
+If the shape is stable, add a `classOnly` type instead of packing.
+
+## Scope
+
+- Packed strings: JSON in **one entity column**.
+- Not prose (markdown, descriptions).
+- Not JSON files in object storage.
+- Not a substitute for polymorphism or `any`.

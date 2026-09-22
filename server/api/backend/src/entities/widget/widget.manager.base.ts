@@ -22,6 +22,7 @@ import { MemoryCache } from 'src/shared/cache/memory-cache';
 import { BatchUtils } from 'src/shared/utils';
 import { SynchronizableEntityIsolated } from 'src/shared/managers/synchronized-entity';
 
+
 @Injectable()
 export class WidgetManagerBase extends MongoManagerIsolated<Widget> implements SynchronizableEntityIsolated {
    protected readonly logger = new Logger(WidgetManagerBase.name);
@@ -191,7 +192,6 @@ export class WidgetManagerBase extends MongoManagerIsolated<Widget> implements S
       await this.postProcessMutationDocument(document, DocumentOperation.insert);
       await this.postProcessMutationConfigPerspective(document.asConfigPerspective(), DocumentOperation.insert);
       
-      await this.dependencyCoordinator.markInvalidated("Widget", document);
 
       return document;
    }
@@ -229,7 +229,6 @@ export class WidgetManagerBase extends MongoManagerIsolated<Widget> implements S
       await this.postProcessMutationDocument(document, DocumentOperation.replace);
       await this.postProcessMutationConfigPerspective(document.asConfigPerspective(), DocumentOperation.replace);
       
-      await this.dependencyCoordinator.markInvalidated("Widget", document);
 
       return document;
 

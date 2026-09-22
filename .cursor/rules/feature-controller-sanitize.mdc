@@ -1,6 +1,6 @@
 ---
 description: Feature controllers must use Sanitize.for() on all @Body() payload parameters
-globs: backend/src/features/**/*.controller.ts
+globs: server/api/backend/src/features/**/*.controller.ts
 alwaysApply: false
 ---
 
@@ -48,4 +48,4 @@ import { Sanitize } from 'src/shared/utils/sanitized';
 
 - **No bare `@Body()` is allowed.** Every `@Body()` must use either `Sanitize.for(...)` or `Sanitize.ignore()`.
 
-See `ai/patterns/feature-controllers.md` for the full controller pattern.
+See `server/api/ai/patterns/feature-controllers.md` for the full controller pattern.

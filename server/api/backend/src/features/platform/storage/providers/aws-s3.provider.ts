@@ -12,6 +12,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { ICloudStorageProvider } from '../types/storage.interfaces';
 import { CloudStorageCredentials, UploadSignature, AccessSignature, FileMetadata } from '../types/storage.types';
+import { errorName } from 'src/shared/utils/unknown-error';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -142,7 +143,7 @@ export class AwsS3Provider implements ICloudStorageProvider {
             etag: response.ETag,
          };
       } catch (error) {
-         if (error.name === 'NotFound') {
+         if (errorName(error) === 'NotFound') {
             return null;
          }
          throw error;
@@ -159,7 +160,7 @@ export class AwsS3Provider implements ICloudStorageProvider {
          await this.s3Client.send(command);
          return true;
       } catch (error) {
-         if (error.name === 'NotFound') {
+         if (errorName(error) === 'NotFound') {
             return false;
          }
          throw error;
@@ -176,7 +177,7 @@ export class AwsS3Provider implements ICloudStorageProvider {
          await this.s3Client.send(command);
          return true;
       } catch (error) {
-         if (error.name === 'NotFound') {
+         if (errorName(error) === 'NotFound') {
             return false;
          }
          throw error;
@@ -269,7 +270,7 @@ export class AwsS3Provider implements ICloudStorageProvider {
          return true;
       } catch (error) {
          // If file doesn't exist, return false
-         if (error.name === 'NotFound' || error.name === 'NoSuchKey') {
+         if (errorName(error) === 'NotFound' || errorName(error) === 'NoSuchKey') {
             return false;
          }
          // Re-throw other errors
@@ -310,7 +311,7 @@ export class AwsS3Provider implements ICloudStorageProvider {
 
          return Buffer.concat(chunks);
       } catch (error) {
-         if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
+         if (errorName(error) === 'NoSuchKey' || errorName(error) === 'NotFound') {
             return null;
          }
          throw error;
@@ -340,7 +341,7 @@ export class AwsS3Provider implements ICloudStorageProvider {
 
          return Buffer.concat(chunks);
       } catch (error) {
-         if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
+         if (errorName(error) === 'NoSuchKey' || errorName(error) === 'NotFound') {
             return null;
          }
          throw error;

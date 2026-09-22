@@ -3,6 +3,7 @@
 <xsl:key name="perspectiveKey" match="items/item/field[string-length(@perspective)>0]" use="concat(../@name, @perspective)" />
 <xsl:key name="isClassKey" match="items/item/field[@isClass='true']" use="concat(../@name, translate(@type, '[]', ''))" />
 <xsl:key name="isEnumKey" match="items/item/field[@isEnum='true']" use="concat(../@name, @type)" />
+<xsl:key name="isEnumFilterFieldKey" match="items/item/field[@isEnum='true' and @filter='true']" use="concat(../@name, translate(@type, '[]', ''))" />
 <xsl:key name="isEnumProjectionKey" match="items/item/projection/field[@isEnum='true']" use="concat(../../@name,../@name, @type)" />
 <xsl:key name="isClassProjectionKey" match="items/item/projection/field[@isClass='true']" use="concat(../../@name, translate(@type, '[]', ''))" />
 <xsl:key name="standardFeatureFieldTypeKey" match="items/feature/entity[not(@isItem='true')]/field[not(@isEnum='true')]" use="concat(../../@name,../@name, translate(@type, '[]', ''))" />
@@ -205,10 +206,11 @@ export class <xsl:value-of select="$name"/> {
    <xsl:if test="string-length(@obsolete)>0">/**
    * Obsolete: <xsl:value-of select="@obsolete"/>
    */
-   </xsl:if><xsl:value-of select="text()"/><xsl:if test="@isNullable='true'">?</xsl:if>: <xsl:choose><xsl:when test="string-length(@enumString)>0"><xsl:variable name="enumType" select="@enumString" /><xsl:for-each select="../../enum[@name=$enumType]/field"><xsl:if test="position()>1"> | </xsl:if>'<xsl:value-of select="text()"/>'</xsl:for-each></xsl:when><xsl:otherwise><xsl:call-template name="NodeType"><xsl:with-param name="type" select="$current_type"/></xsl:call-template></xsl:otherwise></xsl:choose><xsl:if test="contains(@type,'[]')">[]</xsl:if>;
+   </xsl:if><xsl:value-of select="text()"/><xsl:choose><xsl:when test="@isNullable='true'">?</xsl:when><xsl:otherwise>!</xsl:otherwise></xsl:choose>: <xsl:choose><xsl:when test="string-length(@enumString)>0"><xsl:variable name="enumType" select="@enumString" /><xsl:for-each select="../../enum[@name=$enumType]/field"><xsl:if test="position()>1"> | </xsl:if>'<xsl:value-of select="text()"/>'</xsl:for-each></xsl:when><xsl:otherwise><xsl:call-template name="NodeType"><xsl:with-param name="type" select="$current_type"/></xsl:call-template></xsl:otherwise></xsl:choose><xsl:if test="contains(@type,'[]')">[]</xsl:if>;
    </xsl:for-each>
 
    constructor(data: Partial&lt;<xsl:value-of select="$name"/>&gt;) {
+      <xsl:call-template name="EmitCalculatedCtorDefaults"/>
       Object.assign(this, data);
    }
 
@@ -275,7 +277,7 @@ export class <xsl:value-of select="$name"/> {
    * Calculated Field
    */
    </xsl:if>
-   <xsl:value-of select="text()"/><xsl:if test="@isNullable='true'">?</xsl:if>: <xsl:choose>
+   <xsl:value-of select="text()"/><xsl:choose><xsl:when test="@isNullable='true'">?</xsl:when><xsl:otherwise>!</xsl:otherwise></xsl:choose>: <xsl:choose>
      <xsl:when test="string-length(@enumString)>0"><xsl:variable name="enumType" select="@enumString" />
      <xsl:for-each select="../../enum[@name=$enumType]/field"><xsl:if test="position()>1"> | </xsl:if>'<xsl:value-of select="text()"/>'</xsl:for-each>;</xsl:when>
      <xsl:otherwise><xsl:call-template name="NodeType"><xsl:with-param name="type" select="$current_type"/></xsl:call-template><xsl:if test="contains(@type,'[]')">[]</xsl:if>;</xsl:otherwise>
@@ -311,6 +313,7 @@ export class <xsl:value-of select="$name"/> {
    </xsl:if>
 
    constructor(data: Partial&lt;<xsl:value-of select="$name"/>&gt;) {
+      <xsl:call-template name="EmitCalculatedCtorDefaults"/>
       Object.assign(this, data);
    }
 
@@ -470,7 +473,7 @@ export namespace <xsl:value-of select="$name"/> {
       };
 
       <xsl:for-each select="field[@tenant='true' or position()=1]"><xsl:variable name="fieldname"><xsl:value-of select="text()"/></xsl:variable>
-      <xsl:value-of select="text()"/>: <xsl:call-template name="NodeType"><xsl:with-param name="type" select="@type"/></xsl:call-template>;
+      <xsl:value-of select="text()"/>!: <xsl:call-template name="NodeType"><xsl:with-param name="type" select="@type"/></xsl:call-template>;
       </xsl:for-each>
    }
 
@@ -605,7 +608,7 @@ export namespace <xsl:value-of select="$name"/> {
          <xsl:with-param name="text" select="../../field[text()=$fieldname]/@type" />
          <xsl:with-param name="replace" select="'[]'" />
          <xsl:with-param name="by" select="''" />
-      </xsl:call-template></xsl:variable><xsl:value-of select="text()"/><xsl:if test="../../field[text()=$fieldname]/@isNullable='true'">?</xsl:if>: <xsl:choose>
+      </xsl:call-template></xsl:variable><xsl:value-of select="text()"/><xsl:choose><xsl:when test="../../field[text()=$fieldname]/@isNullable='true'">?</xsl:when><xsl:otherwise>!</xsl:otherwise></xsl:choose>: <xsl:choose>
       <xsl:when test="string-length($raw_enumString)>0"><xsl:variable name="enumType" select="$raw_enumString" /><xsl:for-each select="../../../enum[@name=$enumType]/field"><xsl:if test="position()>1"> | </xsl:if>'<xsl:value-of select="text()"/>'</xsl:for-each></xsl:when>
       <xsl:otherwise><xsl:if test="text()='searchable'">string</xsl:if> <xsl:call-template name="NodeType"><xsl:with-param name="type" select="$current_type"/></xsl:call-template><xsl:if test="contains($raw_type,'[]')">[]</xsl:if>
       </xsl:otherwise>
@@ -616,7 +619,7 @@ export namespace <xsl:value-of select="$name"/> {
       /**
        * Manually Hydrated
        */
-      <xsl:value-of select="text()"/><xsl:if test="@isNullable='true'">?</xsl:if>: <xsl:call-template name="NodeType"><xsl:with-param name="type" select="@type"/></xsl:call-template>
+      <xsl:value-of select="text()"/><xsl:choose><xsl:when test="@isNullable='true'">?</xsl:when><xsl:otherwise>!</xsl:otherwise></xsl:choose>: <xsl:call-template name="NodeType"><xsl:with-param name="type" select="@type"/></xsl:call-template>
       </xsl:for-each>
    }
    </xsl:for-each>
@@ -626,7 +629,7 @@ export namespace <xsl:value-of select="$name"/> {
 
 '''[STARTFILE:<xsl:value-of select="../@backendPrefix"/>entities\<xsl:value-of select="$name_lowered"/>\list-input-<xsl:value-of select="$name_lowered"/>.ts]
 import { ListInput } from 'src/shared/types/requests/list-input';
-<xsl:for-each select="field[@isEnum='true' and @filter='true']"><xsl:variable name="enum_type"><xsl:call-template name="ExtractArrayType"><xsl:with-param name="text" select="@type"/></xsl:call-template></xsl:variable><xsl:variable name="enum_type_lower"><xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="$enum_type"/></xsl:call-template></xsl:variable>
+<xsl:for-each select="field[@isEnum='true' and @filter='true' and generate-id() = generate-id(key('isEnumFilterFieldKey', concat(../@name, translate(@type, '[]', '')))[1])]"><xsl:variable name="enum_type"><xsl:call-template name="ExtractArrayType"><xsl:with-param name="text" select="@type"/></xsl:call-template></xsl:variable><xsl:variable name="enum_type_lower"><xsl:call-template name="ToLower"><xsl:with-param name="inputString" select="$enum_type"/></xsl:call-template></xsl:variable>
 import { <xsl:value-of select="$enum_type"/> } from 'src/entities/enums/<xsl:value-of select="$enum_type_lower"/>';</xsl:for-each>
 
 export interface ListInput<xsl:value-of select="$name"/> extends ListInput {
@@ -645,6 +648,38 @@ export interface ListInput<xsl:value-of select="$name"/><xsl:value-of select="@n
 
 </xsl:for-each>
 
+</xsl:template>
+
+<!--
+  Calculated non-nullable scalars get type defaults in the ctor *before*
+  Object.assign so omitted keys keep a safe zero/empty/first-enum value, while
+  any value the author supplies still wins. Nullable / class / array calculated
+  fields stay unset. Authors must still provide non-calculated required fields.
+-->
+<xsl:template name="EmitCalculatedCtorDefaults">
+   <xsl:for-each select="field[string-length(@calculated)>0 and not(@isNullable='true') and not(@isClass='true') and not(contains(@type,'[]'))]">
+      <xsl:choose>
+         <xsl:when test="@type='int' or @type='long'">
+      this.<xsl:value-of select="text()"/> = 0;
+</xsl:when>
+         <xsl:when test="@type='decimal'">
+      this.<xsl:value-of select="text()"/> = '0';
+</xsl:when>
+         <xsl:when test="@type='boolean'">
+      this.<xsl:value-of select="text()"/> = false;
+</xsl:when>
+         <xsl:when test="@isEnum='true'">
+            <xsl:variable name="enumType" select="@type"/>
+            <xsl:variable name="enumZero" select="../../enum[@name=$enumType]/field[1]/text()"/>
+            <xsl:if test="string-length($enumZero)>0">
+      this.<xsl:value-of select="text()"/> = <xsl:value-of select="$enumType"/>.<xsl:value-of select="$enumZero"/>;
+</xsl:if>
+         </xsl:when>
+         <xsl:when test="@type='string'">
+      this.<xsl:value-of select="text()"/> = '';
+</xsl:when>
+      </xsl:choose>
+   </xsl:for-each>
 </xsl:template>
 
 <xsl:template name="NodeType">

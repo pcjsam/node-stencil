@@ -6,21 +6,32 @@ using CodeGenerator.Core;
 
 namespace CodeGenerator.Cli;
 
-class Program
+public static class Program
 {
-    static int Main(string[] args)
+    public static int Main(string[] args)
     {
         try
         {
-            if (args.Length == 0)
+            if (IsHelp(args))
             {
                 ShowUsage();
                 return 0;
             }
 
+            if (args.Length == 0)
+            {
+                FileInfo configFile = FindConfigFile(extraDirectory: null);
+                if (configFile == null)
+                {
+                    Console.WriteLine("[ERROR] No code-generator.config.xml found next to the CLI or in the current directory.");
+                    ShowUsage();
+                    return 1;
+                }
+                return RunFromConfig(configFile, dataFileOverride: null);
+            }
+
             if (args.Length == 1)
             {
-                // Single argument: treat as XML data file path
                 FileInfo dataFile = new FileInfo(args[0]);
                 if (!dataFile.Exists)
                 {
@@ -28,69 +39,15 @@ class Program
                     return 1;
                 }
 
-                // Try to load config file for other settings
-                // Check multiple locations for config file
-                FileInfo configFile = null;
-                string[] configPaths = {
-                    "code-generator.config.xml",
-                    Path.Combine(dataFile.DirectoryName ?? ".", "code-generator.config.xml"),
-                    Path.Combine(Environment.CurrentDirectory, "code-generator.config.xml")
-                };
-
-                foreach (string configPath in configPaths)
+                FileInfo configFile = FindConfigFile(dataFile.DirectoryName);
+                if (configFile == null)
                 {
-                    FileInfo testConfig = new FileInfo(configPath);
-                    if (testConfig.Exists)
-                    {
-                        configFile = testConfig;
-                        Console.WriteLine($"[INFO] Found config file: {configFile.FullName}");
-                        break;
-                    }
+                    Console.WriteLine("[ERROR] Single XML file provided, but code-generator.config.xml was not found.");
+                    Console.WriteLine("Provide output folder and template files, or place the config next to the CLI.");
+                    ShowUsage();
+                    return 1;
                 }
-
-                if (configFile != null && configFile.Exists)
-                {
-                    Options options = Utility.DeserializeFromXml<Options>(configFile);
-                    if (options != null && !string.IsNullOrWhiteSpace(options.OutputFolder) && options.SelectedFiles.Count > 0)
-                    {
-                        // Resolve output folder relative to config file directory (like GUI does)
-                        string outputFolderPath = options.OutputFolder;
-                        if (!Path.IsPathRooted(outputFolderPath))
-                        {
-                            // If it's a relative path, make it relative to the config file's directory
-                            outputFolderPath = Path.Combine(configFile.DirectoryName ?? ".", outputFolderPath);
-                        }
-                        DirectoryInfo outputFolder = new DirectoryInfo(outputFolderPath);
-                        // Keep template paths as strings (like GUI does) instead of converting to FileInfo
-                        string[] templatePaths = options.SelectedFiles.ToArray();
-                        
-                        Console.WriteLine($"[INFO] Using config settings:");
-                        Console.WriteLine($"[INFO]   Output folder: {outputFolderPath}");
-                        Console.WriteLine($"[INFO]   Templates: {string.Join(", ", options.SelectedFiles)}");
-                        
-                        // Use the data file from config (like GUI does), not the command line argument
-                        FileInfo configDataFile = new FileInfo(options.DataFile);
-                        GenerateCode(options.WindowsLineEndings, configDataFile, templatePaths, outputFolder, outputFolderPath);
-                        return 0;
-                    }
-                    else
-                    {
-                        Console.WriteLine("[ERROR] Config file found but missing required fields (OutputFolder or SelectedFiles).");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("[ERROR] No config file found in any of these locations:");
-                    foreach (string configPath in configPaths)
-                    {
-                        Console.WriteLine($"  - {Path.GetFullPath(configPath)}");
-                    }
-                }
-
-                Console.WriteLine("[ERROR] Single XML file provided, but code-generator.config.xml not found or missing required fields.");
-                Console.WriteLine("Please provide output folder and template files as additional arguments.");
-                ShowUsage();
-                return 1;
+                return RunFromConfig(configFile, dataFile);
             }
 
             if (args.Length < 3)
@@ -131,7 +88,6 @@ class Program
                 }
             }
 
-            // manual invoke doesn't support advanced options for windows file endings, presume linux
             GenerateCode(false, dataFileArg, templateFilesArg, outputFolderArg);
             return 0;
         }
@@ -142,25 +98,112 @@ class Program
         }
     }
 
+    static bool IsHelp(string[] args)
+    {
+        if (args.Length != 1)
+        {
+            return false;
+        }
+        string a = args[0];
+        return a == "-h" || a == "--help" || a == "-?" || string.Equals(a, "help", StringComparison.OrdinalIgnoreCase);
+    }
+
+    static FileInfo FindConfigFile(string extraDirectory)
+    {
+        List<string> configPaths = new List<string>
+        {
+            Path.Combine(AppContext.BaseDirectory, "code-generator.config.xml"),
+            Path.Combine(Environment.CurrentDirectory, "code-generator.config.xml")
+        };
+        if (!string.IsNullOrWhiteSpace(extraDirectory))
+        {
+            configPaths.Add(Path.Combine(extraDirectory, "code-generator.config.xml"));
+        }
+
+        foreach (string configPath in configPaths.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            FileInfo testConfig = new FileInfo(configPath);
+            if (testConfig.Exists)
+            {
+                Console.WriteLine($"[INFO] Found config file: {testConfig.FullName}");
+                return testConfig;
+            }
+        }
+        return null;
+    }
+
+    static string ResolveFrom(string baseDir, string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return path;
+        }
+        if (Path.IsPathRooted(path))
+        {
+            return Path.GetFullPath(path);
+        }
+        return Path.GetFullPath(Path.Combine(baseDir, path));
+    }
+
+    static int RunFromConfig(FileInfo configFile, FileInfo dataFileOverride)
+    {
+        Options options = Utility.DeserializeFromXml<Options>(configFile);
+        if (options == null || string.IsNullOrWhiteSpace(options.OutputFolder) || options.SelectedFiles == null || options.SelectedFiles.Count == 0)
+        {
+            Console.WriteLine("[ERROR] Config file found but missing required fields (OutputFolder or SelectedFiles).");
+            return 1;
+        }
+
+        string configDir = configFile.DirectoryName ?? ".";
+        string dataPath = dataFileOverride != null
+            ? dataFileOverride.FullName
+            : ResolveFrom(configDir, options.DataFile);
+        FileInfo dataFile = new FileInfo(dataPath);
+        if (!dataFile.Exists)
+        {
+            Console.WriteLine($"[ERROR] Data file not found: {dataFile.FullName}");
+            return 1;
+        }
+
+        string outputFolderPath = ResolveFrom(configDir, options.OutputFolder);
+        DirectoryInfo outputFolder = new DirectoryInfo(outputFolderPath);
+        if (!outputFolder.Exists)
+        {
+            outputFolder.Create();
+        }
+
+        string[] templatePaths = options.SelectedFiles.Select(t => ResolveFrom(configDir, t)).ToArray();
+        foreach (string templatePath in templatePaths)
+        {
+            if (!File.Exists(templatePath))
+            {
+                Console.WriteLine($"[ERROR] Template file not found: {templatePath}");
+                return 1;
+            }
+        }
+
+        Console.WriteLine("[INFO] Using config settings:");
+        Console.WriteLine($"[INFO]   Data file: {dataFile.FullName}");
+        Console.WriteLine($"[INFO]   Output folder: {outputFolderPath}");
+        Console.WriteLine($"[INFO]   Templates: {string.Join(", ", templatePaths.Select(Path.GetFileName))}");
+
+        GenerateCode(options.WindowsLineEndings, dataFile, templatePaths, outputFolder, outputFolderPath);
+        return 0;
+    }
+
     static void ShowUsage()
     {
         string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0.0";
         Console.WriteLine($"CodeGenerator CLI v{version}");
         Console.WriteLine("==================");
-        Console.WriteLine("Usage: code-generator-cli <data-file> [output-folder] [template1] [template2] ...");
-        Console.WriteLine("       code-generator-cli <data-file> (uses code-generator.config.xml for other settings)");
+        Console.WriteLine("Usage: code-generator-cli");
+        Console.WriteLine("       code-generator-cli <data-file>");
+        Console.WriteLine("       code-generator-cli <data-file> <output-folder> <template1> [template2] ...");
         Console.WriteLine();
-        Console.WriteLine("Arguments:");
-        Console.WriteLine("  data-file       XML data file to process");
-        Console.WriteLine("  output-folder   Directory to write generated files (optional if using config)");
-        Console.WriteLine("  template1...    XSL template files to use (optional if using config)");
+        Console.WriteLine("With no arguments, the CLI reads code-generator.config.xml next to the executable");
+        Console.WriteLine("(server/generation/tools/) and generates from that config.");
         Console.WriteLine();
-        Console.WriteLine("Examples:");
-        Console.WriteLine("  code-generator-cli data.xml output/ template1.xsl template2.xsl");
-        Console.WriteLine("  code-generator-cli data.xml (uses config for output folder and templates)");
-        Console.WriteLine();
-        Console.WriteLine("If only the data file is provided, the CLI will look for code-generator.config.xml");
-        Console.WriteLine("in the current directory for output folder and template settings.");
+        Console.WriteLine("This CLI is the AI/automation entrypoint. The Windows GUI (code-generator) is for humans.");
     }
 
     static void GenerateCode(bool windowsLineEndings, FileInfo dataFile, object templates, DirectoryInfo outputFolder, string outputFolderPath = null)
@@ -174,24 +217,22 @@ class Program
         Console.WriteLine();
 
         Translator translator = new Translator();
-        
-        // Set up event handlers for progress reporting
         translator.Notice += (sender, e) => Console.WriteLine($"[INFO] {e.Message}");
         translator.Error += (sender, e) => Console.WriteLine($"[ERROR] {e.Message}");
-        translator.Progress += (sender, e) => 
+        translator.Progress += (sender, e) =>
         {
             int percentage = (int)e.Progress;
             Console.Write($"\r[PROGRESS] {percentage}%");
             if (percentage >= 100)
+            {
                 Console.WriteLine();
+            }
         };
 
-        // Configure translator
+        translator.WindowsLineEndings = windowsLineEndings;
         translator.DataFile = dataFile.FullName;
-        translator.DataFile = dataFile.FullName;
-        translator.OutputFolder = outputFolderPath ?? outputFolder.FullName; // Use string path if available, otherwise FullName
-        
-        // Add templates
+        translator.OutputFolder = outputFolderPath ?? outputFolder.FullName;
+
         if (templates is FileInfo[] fileInfos)
         {
             foreach (FileInfo template in fileInfos)
@@ -208,16 +249,7 @@ class Program
             }
         }
 
-        Console.WriteLine($"[DEBUG] Added {translator.Templates.Count} templates to translator:");
-        foreach (var template in translator.Templates)
-        {
-            Console.WriteLine($"[DEBUG]   - {template.Name} (IsSelected: {template.IsSelected})");
-        }
-        Console.WriteLine();
-
-        // Generate files
         translator.GenFiles();
-        
         Console.WriteLine("\nCode generation completed successfully!");
     }
 
@@ -227,10 +259,10 @@ class Program
         {
             return fileInfos.Select(t => t.Name).ToArray();
         }
-        else if (templates is string[] templatePaths)
+        if (templates is string[] templatePaths)
         {
             return templatePaths.Select(t => Path.GetFileName(t)).ToArray();
         }
-        return new string[0];
+        return Array.Empty<string>();
     }
 }

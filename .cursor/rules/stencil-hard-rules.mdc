@@ -1,0 +1,22 @@
+---
+description: Hard Stencil invariants that always apply
+alwaysApply: true
+---
+
+# Hard Rules
+
+These are non-negotiable. Details live in glob-scoped rules and `server/api/ai/`.
+
+- **XML-first:** schema, enums, projections, feature contracts, and generated client APIs come from `server/generation/xml/stencil-entities.xml`. Customize only the files the generator creates once and then skips (`*.manager.ts`, `*.controller.ts`).
+- **Regenerating codegen:** models, schemas, `*.base.ts`, admin screens, and generated API clients are overwritten on every generator run. This is not a write-once scaffold (T4, yeoman, “generate then own the files”). Edit XML or XSL, regenerate; never treat those files as the place to keep edits. When explaining this to a person, use the generator log (Created/Updated vs Skipping existing file). Do not say `STARTFILE`, `ENSUREFILE`, or `ENDFILE` unless they are editing an XSL template — the CLI strips those markers before writing the file.
+- **System timestamps:** `created_utc` / `updated_utc` are generator-owned. `deleted_utc` is the platform tombstone (declare in XML for sync/federated entities). Do not reuse those names for domain dates — use `generated_utc`, `authored_utc`, `published_utc`, and similar.
+- **Additive schema:** prefer backward-compatible field adds (`isNullable`, no required backfill). Document rewrites go through `JurisdictionSchemaService` + `JurisdictionSchemaVersion`, not a required cutover in the XML alone.
+- **Strict types:** named classes, enums, and projections. No JSON-packed blobs, `Record<string, unknown>`, or “this field is A or B” polymorphism unless an explicit enum plus typed nested classes. Prefer `[entity]_name` / `[entity]_id` over generic `name` / id aliases so combined projections stay unambiguous.
+- **Dual-homed reads:** include `local_account_id` when selecting one perspective. Never query a grouping field alone.
+- **Feature bodies:** every `@Body()` in feature controllers uses `Sanitize.for(...)` or explicit `Sanitize.ignore()`.
+- **User jurisdiction:** authenticated `/v1/*` data access uses `request.account.jurisdiction_id`, not body/route jurisdiction.
+- **Tombstones:** federated or sync-tracked normal deletes set `deleted_utc` (and bump `edited_utc`). Physical `delete()` is for GDPR/DSAR processors only.
+- **Contracts:** add behavior to the named interface or narrow to a concrete type. No inline optional methods at call sites.
+- **Privacy:** never log full Firebase UID, `auth_identifier`, JWT `sub`, or equivalent stable ids.
+
+Do not take architecture or security shortcuts because the first version is complicated. Cut scope only for true feasibility limits (cost, ship date, missing expertise).

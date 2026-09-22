@@ -103,6 +103,7 @@ export class AccountManager extends AccountManagerBase {
    }
 
    async deleteForDeletion(jurisdiction_id: string, account_id: string): Promise<boolean> {
-      return this._deleteIsolated(jurisdiction_id, account_id);
+      const deleted = await this.deleteAllForAccount(jurisdiction_id, account_id);
+      return deleted > 0;
    }
 }

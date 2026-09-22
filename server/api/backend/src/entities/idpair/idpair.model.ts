@@ -4,11 +4,12 @@ import { sanitizeHtml, truncateStart } from 'src/shared/utils/string.utils';
 // ===========================================
 
 export class IDPair {
-   _id: string;
-   text: string;
+   _id!: string;
+   text!: string;
    
 
    constructor(data: Partial<IDPair>) {
+      
       Object.assign(this, data);
    }
 

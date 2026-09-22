@@ -16,7 +16,6 @@ import { AccessControlModule } from 'src/shared/access-control/access-control.mo
 import { CacheModule } from 'src/shared/cache/cache.module';
 import { StorageModule } from 'src/features/platform/storage/storage.module';
 import { UserModule } from 'src/features/user/user.module';
-import { EmailModule } from 'src/shared/email/email.module';
 
 // Middleware
 import { JurisdictionMiddleware } from 'src/shared/access-control/jurisdiction.middleware';
@@ -95,7 +94,6 @@ const mockImageResizeService = {
       MongoModule,
       CacheModule,
       StorageModule,
-      EmailModule,
       UserModule,
    ],
 })

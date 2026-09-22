@@ -34,18 +34,18 @@ export class JurisdictionAsset {
    
    };
 
-   _id: string;
-   jurisdiction_id: string;
-   asset_kind: AssetKind;
-   file_name: string;
-   storage_key: string;
+   _id!: string;
+   jurisdiction_id!: string;
+   asset_kind!: AssetKind;
+   file_name!: string;
+   storage_key!: string;
    size_kb?: number;
    duration_secs?: number;
    dependency?: AssetDependency;
    account_id_creator?: string;
    dependency_id?: string;
-   available: boolean;
-   resize_required: boolean;
+   available!: boolean;
+   resize_required!: boolean;
    resize_status?: string;
    resize_attempts?: number;
    resize_attempt_utc?: Date;
@@ -70,6 +70,7 @@ export class JurisdictionAsset {
    
 
    constructor(data: Partial<JurisdictionAsset>) {
+      
       Object.assign(this, data);
    }
 
@@ -360,10 +361,10 @@ export namespace JurisdictionAsset {
          
       }
 
-      _id: string;
-      jurisdiction_id: string;
-      asset_kind: AssetKind;
-      storage_key: string;
+      _id!: string;
+      jurisdiction_id!: string;
+      asset_kind!: AssetKind;
+      storage_key!: string;
       thumb_dimensions?: Dimension;
       large_dimensions?: Dimension;
       thumb_small_key?: string;

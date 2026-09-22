@@ -1,0 +1,97 @@
+---
+description: Code is generated from XML — edit XML and run generator, never hand-edit generated files
+globs: server/generation/**,server/api/backend/src/entities/**/*,server/api/backend/src/features/**/models/*,server/api/frontend/src/stencil/**
+alwaysApply: false
+---
+
+# Code Generation Workflow
+
+**Most entity and API code is generated from XML.** Do not hand-edit generated files.
+
+Stencil codegen is **regenerating**, not a write-once template. Tools that emit files you then own (T4, scaffolders, “run the wizard and edit the output”) are a different pattern. Models, schemas, `*.base.ts`, and admin screens are recreated on every run. Kept edits belong only in `*.manager.ts` and `*.controller.ts`. If a change belongs in a rewritten file, it belongs in XML or XSL instead.
+
+When talking to a developer, describe the generator log: **Created/Updated** (rewritten) vs **Skipping existing file** (created once, then theirs). Do not use `STARTFILE`, `ENSUREFILE`, or `ENDFILE`. Those strings exist only inside XSL so the CLI can split one template into many files, and they are stripped before the file is written. Mention them only when editing `server/generation/xsl/`.
+
+## Workflow
+
+1. **Edit XML** — `server/generation/xml/stencil-entities.xml`
+2. **Run generator** — `server/generation/tools/code-generator-cli.exe` (or `code-generator-cli` on macOS/Linux). No args; it reads `code-generator.config.xml` beside the exe. If the binary is missing, run `server/generation/tools/src/generate.ps1` or `src/generate.sh`. Do not use the GUI from AI.
+3. **Customize extension files only** — `.manager.ts`, `.controller.ts` (the generator skips these after the first create)
+
+Documented XML attributes are available even when `stencil-entities.xml` does not use them yet. Prefer the attribute (see `server/api/ai/code-generation.md`) over a hand-rolled manager method, filter, or FE hook.
+
+## Never edit (rewritten every run)
+
+- `*.model.ts`
+- `*.schema.ts`
+- `*.manager.base.ts`
+- `*.controller.base.ts`
+- `*.sanitized.validators.ts` (when part of entity generation)
+- `list-input-*.ts`
+- `entity.module.ts`, `entity.registry.ts`, `account-deletion-manager.ts`
+- `entities/dependencies/dependency-coordinator.ts` (from `nest.dependency.xsl`)
+- Generated frontend/API model stubs (`server/api/frontend/src/stencil/**/models/**`, `server/api/frontend/src/stencil/**/endpoints/**`) — **including feature APIs**
+
+This repository has no mobile `app/` tree. Ignore docs that mention `app/src/cloud/`.
+
+## Feature FE APIs are rewritten every run
+
+`<feature>` XML drives FE RTK Query clients. **Never hand-maintain** `stencil/endpoints/features/**/*Api.ts` — change XML and regenerate.
+
+- **Reads** that POST a JSON body: use `<query name="…" route="…" post="true" … />` so codegen emits `build.query` / `useXQuery` (caching, `providesTags`).
+- **Writes / tasks**: use `<mutation … />` → `build.mutation` / `useXMutation`.
+- Prefer unique method names (`listCustomers`, `listFamilies`) so hooks don't collide across features.
+- `@invalidation="tag"` wires RTK tags. Backend feature controllers stay hand-written.
+
+Details: `server/api/ai/patterns/features-api.md`.
+
+## Safe to edit (created once, or hand-written)
+
+- `*.manager.ts` — extension with custom methods
+- `*.controller.ts` — extension with custom endpoints
+- Generated aggregators (`entity.module.ts`, `entity.registry.ts`) are rewritten; do not keep edits there
+- Feature request models in `server/api/backend/src/features/**/models/` — **check if generated**; feature entities may be generated from XML
+
+## Reserved System Fields
+
+`created_utc` and `updated_utc` are generator-owned system fields on every document entity. Never declare them as XML fields. The generator sets them on insert/replace; `fillFromPartial` skips them.
+
+`deleted_utc` is the **platform tombstone**, not a domain timestamp. For sync-tracked or federated entities, declare it (and `edited_utc` when needed) in XML so the field exists — then only the tombstone/GDPR paths write it. Do not use `created_utc`, `updated_utc`, or `deleted_utc` to mean “when the user authored this,” “when the job ran,” or any other domain event.
+
+Domain dates get their own names: `generated_utc`, `authored_utc`, `published_utc`, `invited_utc`, `edited_utc` (sync cursor), and similar.
+
+## Additive schema
+
+Prefer changes that old documents already satisfy: new `isNullable` fields, new projections, new indexes. Do not add a required non-nullable field that existing rows lack.
+
+When stored documents must be rewritten, add a `JurisdictionSchemaVersion` value and a step in `JurisdictionSchemaService` (`server/api/backend/src/tasks/jurisdiction-schema/`). Do not rely on “everyone will re-save from the admin UI.”
+
+## Strict types in XML
+
+Prefer `classOnly` nested types, enums, and named projections. Do not smuggle shape through a generic object, an untyped map, or a field that is type A or type B depending on another column (“polymorphism between the lines”). Opaque JSON in a string is last resort — see `json-packed-fields.mdc`.
+
+## Entity-specific field names
+
+Lookup-style entities should not share generic field names. Prefer `widget_name` over `name`, and an `idAlias` of `widget_id` next to `_id`, so combined projections and logs stay unambiguous. See `schema-field-names.mdc`.
+
+## Adding a New Entity
+
+1. Add `<item>` with `<field>` elements to XML
+2. Run generator
+3. Confirm generated `entity.module.ts` and `entity.registry.ts` include it
+4. Add custom logic in `{entity}.manager.ts`
+
+## Adding a Field to Existing Entity
+
+1. Add `<field>` to the `<item>` in XML
+2. Run generator
+3. Update extension files (`.manager.ts`) if needed
+
+## Adding a New Enum
+
+1. Add `<enum>` to XML
+2. Run generator
+
+## Reference
+
+See `server/api/ai/code-generation.md` and `server/api/ai/patterns/extending-generated-code.md` for full schema and patterns.

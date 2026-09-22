@@ -20,15 +20,21 @@ import { MAX_INT_32 } from 'src/shared/constants/int';
 import { validate as uuidValidate } from 'uuid';
 import { MemoryCache } from 'src/shared/cache/memory-cache';
 import { BatchUtils } from 'src/shared/utils';
+import { IAccountDeletionManager } from '../account-deletion-manager';
 
 
 @Injectable()
-export class JurisdictionAssetManagerBase extends MongoManagerIsolated<JurisdictionAsset> {
+export class JurisdictionAssetManagerBase extends MongoManagerIsolated<JurisdictionAsset> implements IAccountDeletionManager {
    protected readonly logger = new Logger(JurisdictionAssetManagerBase.name);
 
    constructor(connectionProvider: MongoConnectionProvider, entities: EntityRegistry, dependencyCoordinator: DependencyCoordinator, memoryCache: MemoryCache) {
       super(COLLECTION_NAME, PRIMARY_KEY, connectionProvider, entities, dependencyCoordinator, memoryCache);
    }
+   async deleteAllForAccount(jurisdiction_id: string, account_id: string): Promise<number> {
+      const filter: QueryFilter<JurisdictionAsset> = { account_id_creator: account_id };
+      return await this._deleteManyIsolated(jurisdiction_id, filter);
+   }
+
 
    async validateExistence(jurisdiction_id:string, _id:string) {
       const found = await this._retrieveIsolated<JurisdictionAsset>(JurisdictionAsset, jurisdiction_id, _id, { _id: 1 });
@@ -168,7 +174,6 @@ export class JurisdictionAssetManagerBase extends MongoManagerIsolated<Jurisdict
       await this.postProcessMutationDocument(document, DocumentOperation.insert);
       await this.postProcessMutationProcessPerspective(document.asProcessPerspective(), DocumentOperation.insert);
       
-      await this.dependencyCoordinator.markInvalidated("JurisdictionAsset", document);
 
       return document;
    }
@@ -198,7 +203,6 @@ export class JurisdictionAssetManagerBase extends MongoManagerIsolated<Jurisdict
       await this.postProcessMutationDocument(document, DocumentOperation.replace);
       await this.postProcessMutationProcessPerspective(document.asProcessPerspective(), DocumentOperation.replace);
       
-      await this.dependencyCoordinator.markInvalidated("JurisdictionAsset", document);
 
       return document;
 

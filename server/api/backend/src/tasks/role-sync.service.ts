@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EntityRegistry } from 'src/entities/entity.registry';
 import { AppPermissions } from 'src/shared/constants/permissions';
+import { errorMessage } from 'src/shared/utils/unknown-error';
 
 /** Permissions that should never be auto-assigned to any role */
 const EXCLUDED_PERMISSIONS: string[] = [
@@ -33,7 +34,7 @@ export class RoleSyncService {
          return {
             totalPermissions: 0,
             addedPermissions: 0,
-            errors: [error.message],
+            errors: [errorMessage(error)],
          };
       }
    }
@@ -100,7 +101,7 @@ export class RoleSyncService {
             this.logger.log('Admin role already has all permissions');
          }
       } catch (error) {
-         result.errors.push(error.message);
+         result.errors.push(errorMessage(error));
          this.logger.error('Error hydrating admin role:', error);
       }
 

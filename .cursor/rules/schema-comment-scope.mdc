@@ -1,0 +1,35 @@
+---
+description: Schema comments describe the element's own durable purpose, not narrow downstream detail
+globs: server/generation/xml/*.xml
+alwaysApply: false
+---
+
+# Schema Comment Scope
+
+Comments in the entity schema explain what an element **is** and why it exists —
+its durable, local purpose. They must NOT reach out and describe narrow downstream
+detail (a specific consumer, an exact storage path, a service name, a control-plane
+section, a current algorithm). That detail lives with the code that owns it, drifts
+independently, and turns the schema comment into rot the moment the consumer changes.
+
+A schema element is used by many places over its life; a comment that pins it to one
+of them is too narrow and usually wrong within a release.
+
+```xml
+<!-- GOOD: the element's own durable purpose -->
+<!-- Customer: the account that owns Surveys — the ownership layer between the
+     tenant (Jurisdiction) and its data. -->
+<item name="Customer" ...>
+
+<!-- BAD: reaches into a specific consumer / exact path / control-plane section -->
+<!-- Customer: ... and the root of the raw-artifact storage path
+     ({jurisdiction}/customers/{customer_id}/surveys/... — control-plane 4.6a). -->
+<item name="Customer" ...>
+```
+
+## Rule of thumb
+
+- Describe the element, not the pipeline it happens to feed today.
+- No exact paths, service/class names, method names, or doc/section numbers.
+- If it would go stale when a consumer is refactored, it belongs in that consumer.
+- Prefer no comment over a narrow one; self-evident names need none.

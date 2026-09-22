@@ -89,7 +89,10 @@ public class Translator
 			{
 				ProcessFileToken(item, true, num, totalFiles);
 				num++;
-				OnProgessNotification(decimal.Multiply(decimal.Divide(num, new decimal(totalFiles)), 100m));
+				if (totalFiles > 0)
+				{
+					OnProgessNotification(decimal.Multiply(decimal.Divide(num, new decimal(totalFiles)), 100m));
+				}
 			}
 			
 			// Process ENSUREFILE tokens (only create if doesn't exist)
@@ -97,10 +100,13 @@ public class Translator
 			{
 				ProcessFileToken(item, false, num, totalFiles);
 				num++;
-				OnProgessNotification(decimal.Multiply(decimal.Divide(num, new decimal(totalFiles)), 100m));
+				if (totalFiles > 0)
+				{
+					OnProgessNotification(decimal.Multiply(decimal.Divide(num, new decimal(totalFiles)), 100m));
+				}
 			}
 			
-			OnProgessNotification(0m);
+			OnProgessNotification(100m);
 		}
 		catch (Exception ex2)
 		{
@@ -145,7 +151,7 @@ public class Translator
 					if (foundContent == trimmedContent)
 					{
                         File.Delete(fullPath);
-                        OnNotice($"Removed file: {fileName} from {fullPath}");
+                        OnNotice($"Removed {fileName}");
                     }
 				}
 				return;
@@ -155,28 +161,16 @@ public class Translator
                 // Check if file already exists
                 if (!overwrite && File.Exists(fullPath))
                 {
-                    OnNotice($"Skipping existing file: {fileName}");
+                    OnNotice($"Skipping {fileName}");
 					return;
                 }
 
-                OnNotice($"Writing file: {fileName} to {fullPath} (Content length: {trimmedContent.Length} chars)");
-				// Write the file
 				using (StreamWriter streamWriter = new StreamWriter(fullPath))
 				{
 					streamWriter.Write(trimmedContent);
 				}
 
-				// Verify the file was actually written
-				if (File.Exists(fullPath))
-				{
-					FileInfo writtenFile = new FileInfo(fullPath);
-					string action = overwrite ? "Created/Updated" : "Created";
-					OnNotice($"{action} file: {fileName} (Size: {writtenFile.Length} bytes)");
-				}
-				else
-				{
-					OnError($"Failed to write file: {fileName} to {fullPath}");
-				}
+				OnNotice(overwrite ? $"Wrote {fileName}" : $"Created {fileName}");
 			}
 		}
 		catch (Exception ex)

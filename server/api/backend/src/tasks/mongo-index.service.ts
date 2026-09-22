@@ -3,6 +3,7 @@ import { Interval } from '@nestjs/schedule';
 import { EntityRegistry } from 'src/entities/entity.registry';
 import { MAX_INT_32 } from 'src/shared/constants/int';
 import { IMongoManagerIndexable, IMongoManagerIndexableIsolated } from 'src/shared/managers/mongo-manager-indexable';
+import { errorMessage } from 'src/shared/utils/unknown-error';
 
 @Injectable()
 export class MongoIndexService {
@@ -73,7 +74,7 @@ export class MongoIndexService {
          return result;
       } catch (error) {
          this.logger.error('Error during Index sync:', error);
-         return { success: false, error: error.message };
+         return { success: false, error: errorMessage(error) };
       }
    }
 

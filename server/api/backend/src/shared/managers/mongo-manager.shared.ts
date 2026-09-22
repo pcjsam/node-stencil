@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Model, QueryFilter, ProjectionFields, UpdateWriteOpResult, UpdateQuery, SortOrder, Connection } from 'mongoose';
+import { Model, QueryFilter, ProjectionFields, UpdateWriteOpResult, UpdateQuery, SortOrder, Connection, AnyBulkWriteOperation } from 'mongoose';
 import { MongoManagerBase } from './mongo-manager.base';
 import { MongoConnectionProvider } from '../mongo/mongo-connection.provider';
 import { ListResult } from '../types/data/list-result';
@@ -8,6 +8,7 @@ import { DependencyCoordinator } from 'src/entities/dependencies/dependency-coor
 import { SHARED_TENANT_CODE } from '../constants/tenants';
 import { MemoryCache } from '../cache/memory-cache';
 import { IMongoManagerIndexable } from './mongo-manager-indexable';
+import { hasEncryptedFields } from './schema-registry';
 
 @Injectable()
 export abstract class MongoManagerShared<T> extends MongoManagerBase<T> implements IMongoManagerIndexable {
@@ -91,6 +92,18 @@ export abstract class MongoManagerShared<T> extends MongoManagerBase<T> implemen
       return doc;
    }
 
+   protected async _insertManyShared(docs: T[], chunkSize: number = 500): Promise<number> {
+      if (docs.length === 0) {
+         return 0;
+      }
+      const model = await this.getSharedModel();
+      const size = Math.max(1, chunkSize);
+      for (let i = 0; i < docs.length; i += size) {
+         await model.insertMany(docs.slice(i, i + size), { ordered: false });
+      }
+      return docs.length;
+   }
+
    protected async _upsertShared(ctor: new (...args: any[]) => T, id: string, doc: T, unsetFields?: string[]): Promise<T> {
       const model = await this.getSharedModel();
       const filter = { [this.primaryKeyField]: id } as QueryFilter<T>;
@@ -136,11 +149,48 @@ export abstract class MongoManagerShared<T> extends MongoManagerBase<T> implemen
       return result;
    }
 
+   protected async _bulkWriteShared(ops: AnyBulkWriteOperation[], chunkSize: number = 500): Promise<number> {
+      if (ops.length === 0) {
+         return 0;
+      }
+      const model = await this.getSharedModel();
+      const size = Math.max(1, chunkSize);
+      for (let i = 0; i < ops.length; i += size) {
+         await model.bulkWrite(ops.slice(i, i + size), { ordered: false });
+      }
+      return ops.length;
+   }
+
    protected async _deleteShared(id: string): Promise<boolean> {
       const model = await this.getSharedModel();
       const filter = { [this.primaryKeyField]: id } as QueryFilter<T>;
 
       const result = await model.findOneAndDelete(filter).exec();
       return !!result;
+   }
+
+   /**
+    * Multi-document delete for account-erasure / DSAR paths. Queryable Encryption
+    * collections cannot use deleteMany; those go through per-_id deleteOne bulkWrite.
+    */
+   protected async _deleteManyShared(filter: QueryFilter<T>): Promise<number> {
+      const model = await this.getSharedModel();
+      if (hasEncryptedFields(this.collectionName)) {
+         const matches = await model.find(filter, { _id: 1 } as ProjectionFields<T>).lean({ getters: true }).exec();
+         if (matches.length === 0) {
+            return 0;
+         }
+         const bulkResult = await model.bulkWrite(
+            matches.map(m => ({
+               deleteOne: {
+                  filter: { _id: (m as { _id: string })._id },
+               },
+            })) as AnyBulkWriteOperation[],
+            { ordered: false },
+         );
+         return bulkResult.deletedCount ?? matches.length;
+      }
+      const result = await model.deleteMany(filter).exec();
+      return result.deletedCount ?? 0;
    }
 }

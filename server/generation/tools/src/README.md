@@ -13,16 +13,43 @@ The CodeGenerator is a tool that processes XML data files through XSL templates 
 ## Solution Structure
 
 ```
-CodeGenerator/
-├── CodeGenerator.Core/          # Core translation logic library
-├── CodeGenerator.Cli/           # Command-line interface
-├── CodeGenerator.Gui/           # Windows Forms GUI
-├── build_contained.bat          # Self-contained Windows batch build script
-├── build_contained.ps1          # Self-contained PowerShell build script
-├── build_framework.bat          # Framework-dependent Windows batch build script
-├── build_framework.ps1          # Framework-dependent PowerShell build script
-└── version.props               # Shared version information
+server/generation/tools/
+├── code-generator-cli.exe       # AI entrypoint (built, not in git)
+├── code-generator.exe           # Human GUI, Windows only (built, not in git)
+├── code-generator.config.xml    # XML source, templates, output folder
+└── src/                         # C# source + build scripts (curious engineers)
+    ├── build.ps1 / build.sh
+    ├── generate.ps1 / generate.sh
+    ├── CodeGenerator.Cli/
+    ├── CodeGenerator.Gui/
+    └── CodeGenerator.Core/
 ```
+
+## Build and Deployment
+
+You do not need to know C#. From the repo:
+
+```powershell
+.\server\generation\tools\src\build.ps1    # Windows
+```
+
+```bash
+./server/generation/tools/src/build.sh     # macOS / Linux
+```
+
+That copies binaries into `server/generation/tools/` next to the config:
+
+- **CLI** (all platforms) — `code-generator-cli.exe` or `code-generator-cli`. This is what AI uses.
+- **GUI** (Windows only) — `code-generator.exe`. WinForms; skipped on macOS/Linux.
+
+Self-contained single-file builds include the .NET runtime so engineers only need the SDK for the one-time compile. `build_contained.ps1` / `.bat` wrap the same script.
+
+### Prerequisites
+- .NET 8 SDK or newer (https://dotnet.microsoft.com/download/dotnet/8.0)
+
+## Output
+
+Build scripts always write to `server/generation/tools/` regardless of your current directory.
 
 ## Projects
 
@@ -58,10 +85,16 @@ CodeGenerator/
 
 ## Key Features
 
-### File Generation Tokens
-- **STARTFILE**: Creates or overwrites files
-- **ENSUREFILE**: Creates files only if they don't exist
-- **ENDFILE**: Marks the end of file content
+### How one template becomes many files
+
+XSL output is one stream. Markers in that stream tell the CLI where each file starts and whether to overwrite. The CLI **removes the markers** before writing. They never appear in `server/api`.
+
+People working on the API should not be taught these names. Describe the log instead: **Created/Updated** (rewritten every run) or **Skipping existing file** (created once, then left alone).
+
+Use the markers only when editing a template:
+
+- **STARTFILE** … **ENDFILE**: write this path every run (overwrite).
+- **ENSUREFILE** … **ENDFILE**: write this path only if it does not exist yet.
 
 ### Path Handling
 - Supports relative and absolute paths
@@ -74,44 +107,6 @@ CodeGenerator/
 - Persistent settings between sessions
 - Template selection state
 - Output folder preferences
-
-## Build and Deployment
-
-### Prerequisites
-- .NET 8 SDK
-- Windows (for GUI application)
-
-### Building
-
-#### Self-Contained Builds (Recommended for distribution)
-```bash
-# Using PowerShell
-.\build_contained.ps1
-
-# Using batch file
-build_contained.bat
-```
-
-#### Framework-Dependent Builds (Requires .NET 8 Runtime)
-```bash
-# Using PowerShell
-.\build_framework.ps1
-
-# Using batch file
-build_framework.bat
-```
-
-### Output
-
-Build scripts run from `src/` and publish executables to the parent `tools/` folder:
-
-- **GUI**: `../code-generator.exe` (i.e. `server/generation/tools/code-generator.exe`)
-- **CLI**: `../code-generator-cli.exe`
-
-**Self-Contained Builds**: Complete standalone executables (50-200MB) that include the .NET runtime.
-**Framework-Dependent Builds**: Smaller executables (50-200KB) that require .NET 8 Runtime to be installed on the target machine.
-
-Both build types produce single-file applications targeting Windows x64.
 
 ## Migration Notes
 

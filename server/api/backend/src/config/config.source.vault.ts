@@ -1,4 +1,5 @@
 import { IConfigSource } from './config.types';
+import { errorMessage } from 'src/shared/utils/unknown-error';
 
 export class VaultConfigSource implements IConfigSource {
    constructor(
@@ -14,7 +15,7 @@ export class VaultConfigSource implements IConfigSource {
          // to fall back to environment variables
          return undefined;
       } catch (error) {
-         console.error(`Error fetching secret: ${error.message}`);
+         console.error(`Error fetching secret: ${errorMessage(error)}`);
          return undefined;
       }
    }

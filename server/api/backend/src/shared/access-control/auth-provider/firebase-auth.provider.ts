@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit, UnauthorizedException } from '@nestjs/common';
-import * as admin from 'firebase-admin';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import { ConfigResolver } from 'src/config/config.resolver';
 import { ConfigTemplates } from 'src/config/config.templates';
 import { StencilJWTPayload } from 'src/shared/types/auth.types';
@@ -22,9 +23,9 @@ export class FirebaseAuthProvider implements IAuthProvider, OnModuleInit {
          );
       }
 
-      if (!admin.apps.length) {
-         admin.initializeApp({
-            credential: admin.credential.cert({
+      if (!getApps().length) {
+         initializeApp({
+            credential: cert({
                projectId,
                privateKey: privateKey.replace(/\\n/g, '\n'),
                clientEmail,
@@ -41,7 +42,7 @@ export class FirebaseAuthProvider implements IAuthProvider, OnModuleInit {
 
    async verifyToken(token: string): Promise<StencilJWTPayload> {
       try {
-         const decoded = await admin.auth().verifyIdToken(token);
+         const decoded = await getAuth().verifyIdToken(token);
          return {
             sub: decoded.uid,
             email: decoded.email,
@@ -66,7 +67,7 @@ export class FirebaseAuthProvider implements IAuthProvider, OnModuleInit {
 
    async setClaims(uid: string, claims: Record<string, unknown>): Promise<boolean> {
       try {
-         const user = await admin.auth().getUser(uid);
+         const user = await getAuth().getUser(uid);
          const existing = user.customClaims ?? {};
          const updated = { ...existing };
          let changed = false;
@@ -82,7 +83,7 @@ export class FirebaseAuthProvider implements IAuthProvider, OnModuleInit {
             return true;
          }
 
-         await admin.auth().setCustomUserClaims(uid, updated);
+         await getAuth().setCustomUserClaims(uid, updated);
          this.logger.log(`Updated claims for user ${uid.slice(0, 8)}***: ${Object.keys(claims).join(', ')}`);
          return true;
       } catch (error) {
@@ -93,8 +94,8 @@ export class FirebaseAuthProvider implements IAuthProvider, OnModuleInit {
 
    async revokeUser(uid: string): Promise<void> {
       try {
-         await admin.auth().updateUser(uid, { disabled: true });
-         await admin.auth().revokeRefreshTokens(uid);
+         await getAuth().updateUser(uid, { disabled: true });
+         await getAuth().revokeRefreshTokens(uid);
          this.logger.log(`Disabled and revoked tokens for user ${uid.slice(0, 8)}***`);
       } catch (error) {
          this.logger.error(`Failed to revoke user ${uid.slice(0, 8)}***: ${error}`);
@@ -103,7 +104,7 @@ export class FirebaseAuthProvider implements IAuthProvider, OnModuleInit {
 
    async reEnableUser(uid: string): Promise<void> {
       try {
-         await admin.auth().updateUser(uid, { disabled: false });
+         await getAuth().updateUser(uid, { disabled: false });
          this.logger.log(`Re-enabled user ${uid.slice(0, 8)}***`);
       } catch (error) {
          this.logger.error(`Failed to re-enable user ${uid.slice(0, 8)}***: ${error}`);

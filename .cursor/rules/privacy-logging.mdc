@@ -1,6 +1,6 @@
 ---
 description: Do not log full stable user identifiers such as Firebase UID or auth_identifier
-globs: backend/src/**/*.ts
+globs: server/api/backend/src/**/*.ts
 alwaysApply: false
 ---
 
