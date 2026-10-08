@@ -327,6 +327,12 @@ export class JurisdictionManagerBase extends MongoManagerShared<Jurisdiction> {
             throw new UIException(LocalizableString.General_ReferenceInUse('Widget'));
          }
       }
+      if (!skip_entities || skip_entities.length == 0 || !skip_entities.includes('Board')){
+         hasReference = await this.entities.boardManager.anyWithJurisdiction(_id);
+         if (hasReference) {
+            throw new UIException(LocalizableString.General_ReferenceInUse('Board'));
+         }
+      }
    }
    
    protected async calculateSearchable(document: Jurisdiction) : Promise<void> {

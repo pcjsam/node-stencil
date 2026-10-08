@@ -175,3 +175,12 @@ export function itemSchema_Widget_Public(mode: McpSchemaMode): JsonSchema {
       published_date: schemaProperty(mode, { ...itemSchema_FullDate(mode), title: 'Published Date' }, true),
    }, ['_id', 'jurisdiction_id', 'title']);
 }
+
+export function itemSchema_Board_Public(mode: McpSchemaMode): JsonSchema {
+   return objectSchema(mode, {
+      _id: schemaProperty(mode, { type: 'string', format: 'uuid', title: 'Id' }, false),
+      jurisdiction_id: schemaProperty(mode, { type: 'string', maxLength: 10, title: 'Jurisdiction' }, false),
+      board_name: schemaProperty(mode, { type: 'string', maxLength: 200, title: 'Board name' }, false),
+      board_description: schemaProperty(mode, { type: 'string', maxLength: 500, title: 'Board Description' }, true),
+   }, ['_id', 'jurisdiction_id', 'board_name']);
+}

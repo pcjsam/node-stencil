@@ -92,6 +92,18 @@ export const AdminPermissions = {
          },
          
       },
+      Board: {
+         Read: 'admin:board:read',
+         Write: 'admin:board:write',
+         Public: {
+            Read: 'admin:board.public:read',
+         },
+         
+         Config: {
+            Write: 'admin:board.config:write',
+         },
+         
+      },
       
    }
 } as const;

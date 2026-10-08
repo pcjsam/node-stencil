@@ -12,6 +12,7 @@ import JurisdictionSettingList from '../jurisdictionsetting/JurisdictionSettingL
 import JurisdictionAssetList from '../jurisdictionasset/JurisdictionAssetList';
 import AccountList from '../account/AccountList';
 import WidgetList from '../widget/WidgetList';
+import BoardList from '../board/BoardList';
 import Loading from '@/components/shared/Loading';
 
 import JurisdictionCrumb, { navigationForJurisdiction } from '../jurisdiction/JurisdictionCrumb';
@@ -72,6 +73,9 @@ function JurisdictionDetail(props: JurisdictionDetailProps) {
          </div>
          <div className='my-8'>
             <WidgetList expands={false} />
+         </div>
+         <div className='my-8'>
+            <BoardList expands={false} />
          </div>
          
       </div>

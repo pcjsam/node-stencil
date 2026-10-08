@@ -229,6 +229,20 @@
       <entry>published_date</entry>
     </projection>
   </item>
+  <item name="Board" friendlyName="Board" tenant="Isolated" useDocument="true" uiDetail="true" uiDisplayField="board_name" accountDeletion="owned" accountDeletionPhase="content" accountDeletionOrder="15">
+    <field type="Uuid" isNullable="false" friendlyName="Id">_id</field>
+    <field type="string" isNullable="false" maxLength="10" tenant="true" foreignKey="Jurisdiction" foreignKeyField="_id" uiParent="true" friendlyName="Jurisdiction">jurisdiction_id</field>
+    <field type="Uuid" isNullable="false" friendlyName="Account ID Creator" accountOwner="true">account_id_creator</field>
+    <field type="string" isNullable="false" perspective="Config" maxLength="200" uiList="true" searchable="true" sortable="true" friendlyName="Board name">board_name</field>
+    <field type="string" isNullable="true" perspective="Config" maxLength="500" friendlyName="Board Description">board_description</field>
+
+    <projection name="Public" get="true">
+      <entry>_id</entry>
+      <entry>jurisdiction_id</entry>
+      <entry>board_name</entry>
+      <entry>board_description</entry>
+    </projection>
+  </item>
   <enum name="AccountStatus">
     <field value="-1">disabled</field>
     <field value="0">enabled</field>

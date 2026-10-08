@@ -12,6 +12,7 @@ import { JurisdictionSettingModule } from './jurisdictionsetting/jurisdictionset
 import { JurisdictionAssetModule } from './jurisdictionasset/jurisdictionasset.module';
 import { AccountModule } from './account/account.module';
 import { WidgetModule } from './widget/widget.module';
+import { BoardModule } from './board/board.module';
 
 const ENTITY_MODULES = [
    GlobalSettingModule,
@@ -23,6 +24,7 @@ const ENTITY_MODULES = [
    JurisdictionAssetModule,
    AccountModule,
    WidgetModule,
+   BoardModule,
 ];
 
 @Module({})

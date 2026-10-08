@@ -48,6 +48,7 @@ export class AccountDeletionManagerRegistry {
       return [
          { entity: 'JurisdictionAsset', manager: entities.jurisdictionAssetManager, phase: 'storage', order: 10 },
          { entity: 'Account', manager: entities.accountManager, phase: 'account', order: 20 },
+         { entity: 'Board', manager: entities.boardManager, phase: 'content', order: 15 },
       ];
    }
 

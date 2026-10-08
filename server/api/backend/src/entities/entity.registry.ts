@@ -11,6 +11,7 @@ import type { JurisdictionSettingManager } from './jurisdictionsetting/jurisdict
 import type { JurisdictionAssetManager } from './jurisdictionasset/jurisdictionasset.manager';
 import type { AccountManager } from './account/account.manager';
 import type { WidgetManager } from './widget/widget.manager';
+import type { BoardManager } from './board/board.manager';
 
 
 @Injectable()
@@ -26,6 +27,7 @@ export class EntityRegistry implements OnModuleInit {
    private _jurisdictionAssetManager!: JurisdictionAssetManager;
    private _accountManager!: AccountManager;
    private _widgetManager!: WidgetManager;
+   private _boardManager!: BoardManager;
 
    onModuleInit() {
       // Optionally, eagerly resolve all managers here if you want
@@ -129,6 +131,17 @@ export class EntityRegistry implements OnModuleInit {
          }
       }
       return this._widgetManager;
+   }
+   
+   get boardManager(): BoardManager {
+      if (!this._boardManager) {
+         try {
+            this._boardManager = this.moduleRef.get('BoardManager', { strict: false });
+         } catch (error: unknown) {
+            throw new Error(`BoardManager not available: ${error instanceof Error ? error.message : String(error)}`);
+         }
+      }
+      return this._boardManager;
    }
    
 
